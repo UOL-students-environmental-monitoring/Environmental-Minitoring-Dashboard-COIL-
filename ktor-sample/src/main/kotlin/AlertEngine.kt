@@ -1,56 +1,68 @@
 package com.example
 
 // this file will handle the alert logic giving us the exact conditions for alerts
+// based on livestock sensor data: GPS location, accelerometer movement, and temperature
 
-object AlertEngine{
+object AlertEngine {
 
     // list of alerts triggered and specific alerts triggered
-    data class EvaluationResult(val status:String,val alerts:List<AlertTrigger>)
-    data class AlertTrigger(val parameter:String,val severity: String,val message:String)
+    data class EvaluationResult(val status: String, val alerts: List<AlertTrigger>)
+    data class AlertTrigger(val parameter: String, val severity: String, val message: String)
 
-    // take in data from the sensor using a function
-    fun evaluateWaterQuality(data: WaterQualityPayload): EvaluationResult{
+    // uses a function to accept data within livestock sensor
+    fun evaluateLivestock(data: LivestockPayload): EvaluationResult {
 
-        // if one of the conditions underneath accepted append AlertTrigger to triggers
+        // add AlertTrigger to triggers, if conditions are met
         val alertsTriggered = mutableListOf<AlertTrigger>()
-        // initially water is set to normal until proven with the conditions below
-        var ovrStatus = "normal"
+        // initially status is normal, until conditions met to change it
+        var overallStatus = "normal"
 
-        // checking pH to see if safe to drink
-        if (data.pH < 6.0 || data.pH > 9.0) {
-            alertsTriggered.add(AlertTrigger("pH", "critical", "pH is less than 6.0 or more than 9.0 - water might be corrosive/scaling"))
-        } else if (data.pH < 6.5 || data.pH > 8.5) {
-            alertsTriggered.add(AlertTrigger("pH", "warning", "pH is less than 6.5 or more than 8.5 - outside comfortable drinking range"))
+        // Temperature Rules
+        // temperature above 30°C is dangerous, animals sensitive to heat.
+        if ( data.ambientTemperatureC > 35.0 ) {
+            alertsTriggered.add(AlertTrigger("temperature","critical","Ambient temperature is greater than 35°C — critical heat stress risk to livestock"))
+        }
+        else if ( data.ambientTemperatureC > 30.0 ) {
+            alertsTriggered.add(AlertTrigger("temperature","warning","Ambient temperature is greater than 30°C but less than 35°C — monitor for signs of heat stress"))
         }
 
-        // checking turbidity conditions
-        // 2. Turbidity Rules
-        if (data.turbidityNtu > 10.0) {
-            alertsTriggered.add(AlertTrigger("turbidity", "critical", "Turbidity is more than 10 NTU - significant pathogen transport risk"))
-        } else if (data.turbidityNtu > 5.0) {
-            alertsTriggered.add(AlertTrigger("turbidity", "warning", "Turbidity is more than 5 NTU - visibly cloudy, reduced disinfection"))
+        // Low Activity Rules
+        // accelMagG measures movement in g-force.
+        // stationary animal is around 1.0g.
+        // below 1.0 during the day, the animal may be unhealthy.
+        // values less than 0.5 g infer the animal is almost completely motionless.
+        if ( data.accelMagG < 0.3 ) {
+            alertsTriggered.add(AlertTrigger("low_activity","critical","Accelerometer reading is less than 0.3g — animal may be collapsed or severely ill"))
+        }
+        else if ( data.accelMagG < 0.6 ) {
+            alertsTriggered.add(AlertTrigger("low_activity","warning","Accelerometer reading is less than 0.6g but greater than 0.3g — animal showing reduced movement, possible illness"))
         }
 
-        // checking conductivity conditions
-        if (data.conductivityPerCm > 1500.0) {
-            alertsTriggered.add(AlertTrigger("conductivity", "critical", "Conductivity is more than 1500 µS/cm - increased salinity"))
-        } else if (data.conductivityPerCm > 500.0) {
-            alertsTriggered.add(AlertTrigger("conductivity", "warning", "Conductivity is more than 500 µS/cm - elevated dissolved solids"))
+        // Flee / Rustling Event Rules
+        // random spike in accelerometer infer the animal is running at speed
+        // above 3.0g indicate a flee event, possible livestock theft (rustling)
+        if ( data.accelMagG > 4.0 ) {
+            alertsTriggered.add(AlertTrigger("flee","critical","Accelerometer spiked above 4.0g — possible flee event detected, check for rustling or predator immediately"))
+        }
+        else if ( data.accelMagG > 3.0 ) {
+            alertsTriggered.add(AlertTrigger("flee","warning","Accelerometer spike above 3.0g — unusual movement detected, monitor situation closely"))
         }
 
-        // checking for combined conditions as recomended from the readme file
-        if (data.turbidityNtu > 5.0 && data.conductivityPerCm > 500.0) {
-            alertsTriggered.add(AlertTrigger("contamination", "warning", "Simultaneous turbidity & conductivity spike indicates possible agricultural problem such as chemical contamination"))
+        // Combined Condition — heat stress AND low activity together
+        // an animal that is both very hot and barely moving is a medical emergency
+        if (data.ambientTemperatureC > 30.0 && data.accelMagG < 0.6) {
+            alertsTriggered.add(AlertTrigger("heat_collapse", "critical", "High temperature with low activity — animal may be suffering heat stroke"))
         }
 
         // overall status changes to critical if any alerts triggered were critical
         // overall status changes to warning if there were any alerts triggered, but not critical
         // overall status stays as normal if there were no alerts triggered
         if (alertsTriggered.any { it.severity == "critical" }) {
-            ovrStatus = "critical"
+            overallStatus = "critical"
         } else if (alertsTriggered.isNotEmpty()) {
-            ovrStatus = "warning"
+            overallStatus = "warning"
         }
-        return EvaluationResult(ovrStatus,alertsTriggered)
+
+        return EvaluationResult(overallStatus, alertsTriggered)
     }
 }

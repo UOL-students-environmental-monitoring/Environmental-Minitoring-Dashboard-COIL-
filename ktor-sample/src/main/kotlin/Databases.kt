@@ -31,13 +31,13 @@ fun Application.configureDatabases() {
     // creation of the tables
     transaction {
         // create the tables if they are non-existent
-        SchemaUtils.create(Sites, WaterQualityReadings, AlertsLog)
+        SchemaUtils.create(Sites, LivestockReadings, AlertsLog)
 
-        // pre-fill the database with the known monitoring sites
+        // pre-fill the database with the known monitoring sites/herds
+        // these match the site_id values found in livestock_tracking.csv
         if (Sites.selectAll().empty()) {
-            Sites.insert { it[id] = "site_upstream"; it[description] = "Reference point above agricultural land" }
-            Sites.insert { it[id] = "site_downstream"; it[description] = "Below farming activity" }
-            Sites.insert { it[id] = "site_reservoir"; it[description] = "Community dam" }
+            Sites.insert { it[id] = "herd_cattle_A"; it[description] = "Cattle herd in the eastern grazing pasture" }
+            Sites.insert { it[id] = "herd_goat_B"; it[description] = "Goat herd in the northern hillside enclosure" }
         }
     }
 }
