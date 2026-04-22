@@ -1,109 +1,200 @@
+@file:Suppress("InvalidPackageDeclaration")
+
 package com.example
 
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.http.content.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.thymeleaf.Thymeleaf
-import io.ktor.server.thymeleaf.ThymeleafContent
-import java.sql.Connection
-import java.sql.DriverManager
-import org.jetbrains.exposed.sql.*
-import org.thymeleaf.templateparser.markup.HTMLTemplateParser
-import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
-import java.time.LocalDateTime
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.http.content.staticResources
+import io.ktor.server.plugins.ContentTransformationException
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import org.jetbrains.exposed.sql.Query
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.LocalDateTime
 
+private const val PH_MIN = 0.0
+private const val PH_MAX = 14.0
+private const val MIN_ACCEPTED_VALUE = 0.0
+private const val MAX_SITE_ID_LENGTH = 255
+private const val MAX_ALERT_RESULTS = 50
+
+/** Registers HTTP routes for static content, ingest, and alert retrieval. */
 fun Application.configureRouting() {
     routing {
         get("/") {
             call.respondText("Hello World!")
         }
-        // Static plugin. Try to access `/static/index.html`
+
         staticResources("/static", "static")
 
-        // POST endpoint to send new data to server
-        // wrap the entire process in catch block for error handling and no unexpected crashes
-        post("/api/ingest") {
-            try {
-                // look at incoming JSON and transform it into WaterQualityPayload class
-                val payload = call.receive<WaterQualityPayload>()
+        route("/api") {
+            post("/ingest") { handleIngest(call) }
+            get("/alerts") { handleAlerts(call) }
+        }
+    }
+}
 
-                // mark scheme requirement: Validate incoming data
+@Suppress("ReturnCount")
+private suspend fun handleIngest(call: ApplicationCall) {
+    val payload =
+        try {
+            call.receive<WaterQualityPayload>()
+        } catch (_: ContentTransformationException) {
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse("Payload is corrupt or there are missing fields"),
+            )
+            return
+        }
 
-                // pH must be between 0-14, turbidity must be positive
-                if (payload.pH < 0.0 || payload.turbidityNtu < 0.0 || payload.pH > 14.0){
-                    // return an error message
-                    call.respond(HttpStatusCode.BadRequest, "Outside of sensor range")
-                    return@post
-                }
+    val parsedTimestamp =
+        try {
+            validatePayload(payload)
+        } catch (exception: IllegalArgumentException) {
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(exception.message ?: "Payload is corrupt or there are missing fields"),
+            )
+            return
+        }
 
-                // evaluating the data
+    if (!siteExists(payload.siteId)) {
+        call.respond(
+            HttpStatusCode.NotFound,
+            ErrorResponse("Unknown site ID: ${payload.siteId}"),
+        )
+        return
+    }
 
-                // pass the validated time to AlertEngine
-                val evaluation = AlertEngine.evaluateWaterQuality(payload)
-                // converts the string from the dataset into Java LocalDatetime object
-                val parseTime = LocalDateTime.parse(payload.timeStamp)
+    val evaluation = AlertEngine.evaluateWaterQuality(payload)
+    persistReading(payload, parsedTimestamp, evaluation)
 
-                transaction {
-                    // creation of a new row in WaterQualityReadings table
-                    // for every reading store the following environmental parameters
-                    val insertedReadingId = WaterQualityReadings.insert {
-                        it[siteId] = payload.siteId
-                        it[timeStamp] = parseTime
-                        it[pH] = payload.pH
-                        it[turbidityNtu] = payload.turbidityNtu
-                        it[conductivityPerCm] = payload.conductivityPerCm
-                        it[waterTempC] = payload.waterTempC
-                        it[waterLvlCm] = payload.waterLvlCm
-                        it[lightLux] = payload.lightLux
-                        it[status] = evaluation.status
-                    } get WaterQualityReadings.id       // after creation of new row assign row id in insertedReadingId
+    call.respond(
+        HttpStatusCode.Created,
+        IngestResponse(message = "successfully saved", derivedState = evaluation.status),
+    )
+}
 
-                    // AlertEngine returns a list of alerts which we loop through every alert
-                    evaluation.alerts.forEach { alert ->
-                        // for every triggered alert we insert a new row into AlertsLog table
-                        AlertsLog.insert {
-                            // linking back to the specific sensor that caused the alert
-                            it[readingId] = insertedReadingId
-                            it[siteId] = payload.siteId
-                            it[parameter] = alert.parameter
-                            it[severity] = alert.severity
-                            it[message] = alert.message
-                            it[timeStamp] = parseTime
-                        }
-                    }
-                }
-            // send 201 HTTP status code if success, if call.receive() failed send error message and code rather than crarshing
-                call.respond(HttpStatusCode.Created,mapOf("waiting status..." to "successfully saved","derived_state" to evaluation.status))
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.BadRequest,"Payload is corrupt or there are missing fields")
-            }
+private suspend fun handleAlerts(call: ApplicationCall) {
+    val siteFilter = call.request.queryParameters["site"]
+    val severityFilter = call.request.queryParameters["severity"]?.lowercase()
 
-            // GET endpoint
+    if (siteFilter != null && !siteExists(siteFilter)) {
+        call.respond(HttpStatusCode.NotFound, ErrorResponse("Unknown site ID: $siteFilter"))
+        return
+    }
 
-            // retrieving and sending alerts from backend to frontend
-            get("/api/alerts") {
-                val activeAlerts = transaction {
-                    AlertsLog.selectAll()
-                        .orderBy(AlertsLog.timeStamp to SortOrder.DESC)
-                        .limit(50)
-                        .map {
-                            AlertDTO(
-                                id = it[AlertsLog.id],
-                                siteId = it[AlertsLog.siteId],
-                                parameter = it[AlertsLog.parameter],
-                                severity = it[AlertsLog.severity],
-                                message = it[AlertsLog.message],
-                                timeStamp = it[AlertsLog.timeStamp].toString())
-                        }
-                }
-                call.respond(activeAlerts)
+    call.respond(fetchAlerts(siteFilter, severityFilter))
+}
+
+private fun persistReading(
+    payload: WaterQualityPayload,
+    parsedTimestamp: LocalDateTime,
+    evaluation: AlertEngine.EvaluationResult,
+) {
+    transaction {
+        val insertedReadingId =
+            WaterQualityReadings.insert {
+                it[siteId] = payload.siteId
+                it[timeStamp] = parsedTimestamp
+                it[pH] = payload.pH
+                it[turbidityNtu] = payload.turbidityNtu
+                it[conductivityPerCm] = payload.conductivityPerCm
+                it[waterTempC] = payload.waterTempC
+                it[waterLvlCm] = payload.waterLvlCm
+                it[lightLux] = payload.lightLux
+                it[status] = evaluation.status
+            } get WaterQualityReadings.id
+
+        evaluation.alerts.forEach { alert ->
+            AlertsLog.insert {
+                it[readingId] = insertedReadingId
+                it[siteId] = payload.siteId
+                it[parameter] = alert.parameter
+                it[severity] = alert.severity
+                it[message] = alert.message
+                it[timeStamp] = parsedTimestamp
             }
         }
     }
 }
+
+private fun fetchAlerts(
+    siteFilter: String?,
+    severityFilter: String?,
+): List<AlertDTO> =
+    transaction {
+        filteredAlertsQuery(siteFilter, severityFilter)
+            .orderBy(AlertsLog.timeStamp to SortOrder.DESC)
+            .limit(MAX_ALERT_RESULTS)
+            .map {
+                AlertDTO(
+                    id = it[AlertsLog.id],
+                    siteId = it[AlertsLog.siteId],
+                    parameter = it[AlertsLog.parameter],
+                    severity = it[AlertsLog.severity],
+                    message = it[AlertsLog.message],
+                    timeStamp = it[AlertsLog.timeStamp].toString(),
+                )
+            }
+    }
+
+private fun filteredAlertsQuery(
+    siteFilter: String?,
+    severityFilter: String?,
+): Query {
+    var query: Query = AlertsLog.selectAll()
+
+    if (siteFilter != null) {
+        query = query.andWhere { AlertsLog.siteId eq siteFilter }
+    }
+    if (severityFilter != null) {
+        query = query.andWhere { AlertsLog.severity eq severityFilter }
+    }
+
+    return query
+}
+
+private fun validatePayload(payload: WaterQualityPayload): LocalDateTime {
+    require(payload.siteId.isNotBlank()) { "Site ID is required" }
+    require(payload.siteId.length <= MAX_SITE_ID_LENGTH) { "Site ID is too long" }
+    require(payload.pH in PH_MIN..PH_MAX) { "Outside of sensor range" }
+
+    requireNonNegative("turbidity", payload.turbidityNtu)
+    requireNonNegative("conductivity", payload.conductivityPerCm)
+    requireNonNegative("water temperature", payload.waterTempC)
+    requireNonNegative("water level", payload.waterLvlCm)
+    requireNonNegative("light", payload.lightLux)
+
+    return try {
+        LocalDateTime.parse(payload.timeStamp)
+    } catch (_: Exception) {
+        throw IllegalArgumentException("Timestamp is malformed")
+    }
+}
+
+private fun requireNonNegative(
+    fieldName: String,
+    value: Double,
+) {
+    require(value >= MIN_ACCEPTED_VALUE) { "$fieldName must be non-negative" }
+}
+
+private fun siteExists(siteId: String): Boolean =
+    transaction {
+        Sites
+            .selectAll()
+            .where { Sites.id eq siteId }
+            .limit(1)
+            .any()
+    }

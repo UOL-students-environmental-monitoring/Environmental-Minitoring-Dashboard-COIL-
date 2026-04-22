@@ -1,56 +1,146 @@
+@file:Suppress("InvalidPackageDeclaration")
+
 package com.example
 
-// this file will handle the alert logic giving us the exact conditions for alerts
+private const val MIN_CRITICAL_PH = 6.0
+private const val MAX_CRITICAL_PH = 9.0
+private const val MIN_WARNING_PH = 6.5
+private const val MAX_WARNING_PH = 8.5
+private const val WARNING_TURBIDITY_NTU = 5.0
+private const val CRITICAL_TURBIDITY_NTU = 10.0
+private const val WARNING_CONDUCTIVITY_US_CM = 500.0
+private const val CRITICAL_CONDUCTIVITY_US_CM = 1500.0
+private const val STATUS_NORMAL = "normal"
+private const val STATUS_WARNING = "warning"
+private const val STATUS_CRITICAL = "critical"
+private const val PH_CRITICAL_MESSAGE =
+    "pH is less than 6.0 or more than 9.0 - water might be corrosive/scaling"
+private const val PH_WARNING_MESSAGE =
+    "pH is less than 6.5 or more than 8.5 - outside comfortable drinking range"
+private const val TURBIDITY_CRITICAL_MESSAGE =
+    "Turbidity is more than 10 NTU - significant pathogen transport risk"
+private const val TURBIDITY_WARNING_MESSAGE =
+    "Turbidity is more than 5 NTU - visibly cloudy, reduced disinfection"
+private const val CONDUCTIVITY_CRITICAL_MESSAGE =
+    "Conductivity is more than 1500 µS/cm - increased salinity"
+private const val CONDUCTIVITY_WARNING_MESSAGE =
+    "Conductivity is more than 500 µS/cm - elevated dissolved solids"
+private const val CONTAMINATION_WARNING_MESSAGE =
+    "Simultaneous turbidity & conductivity spike indicates possible agricultural problem such as chemical contamination"
 
-object AlertEngine{
+/** Evaluates water-quality readings against threshold-based alert rules. */
+object AlertEngine {
+    /** Result of evaluating a reading against the configured alert rules. */
+    data class EvaluationResult(
+        val status: String,
+        val alerts: List<AlertTrigger>,
+    )
 
-    // list of alerts triggered and specific alerts triggered
-    data class EvaluationResult(val status:String,val alerts:List<AlertTrigger>)
-    data class AlertTrigger(val parameter:String,val severity: String,val message:String)
+    /** Describes a single alert raised by the rules engine. */
+    data class AlertTrigger(
+        val parameter: String,
+        val severity: String,
+        val message: String,
+    )
 
-    // take in data from the sensor using a function
-    fun evaluateWaterQuality(data: WaterQualityPayload): EvaluationResult{
-
-        // if one of the conditions underneath accepted append AlertTrigger to triggers
+    /** Applies the current water-quality rules and returns the resulting alerts. */
+    fun evaluateWaterQuality(data: WaterQualityPayload): EvaluationResult {
         val alertsTriggered = mutableListOf<AlertTrigger>()
-        // initially water is set to normal until proven with the conditions below
-        var ovrStatus = "normal"
+        addPhAlert(data, alertsTriggered)
+        addTurbidityAlert(data, alertsTriggered)
+        addConductivityAlert(data, alertsTriggered)
+        addCombinedAlert(data, alertsTriggered)
 
-        // checking pH to see if safe to drink
-        if (data.pH < 6.0 || data.pH > 9.0) {
-            alertsTriggered.add(AlertTrigger("pH", "critical", "pH is less than 6.0 or more than 9.0 - water might be corrosive/scaling"))
-        } else if (data.pH < 6.5 || data.pH > 8.5) {
-            alertsTriggered.add(AlertTrigger("pH", "warning", "pH is less than 6.5 or more than 8.5 - outside comfortable drinking range"))
-        }
-
-        // checking turbidity conditions
-        // 2. Turbidity Rules
-        if (data.turbidityNtu > 10.0) {
-            alertsTriggered.add(AlertTrigger("turbidity", "critical", "Turbidity is more than 10 NTU - significant pathogen transport risk"))
-        } else if (data.turbidityNtu > 5.0) {
-            alertsTriggered.add(AlertTrigger("turbidity", "warning", "Turbidity is more than 5 NTU - visibly cloudy, reduced disinfection"))
-        }
-
-        // checking conductivity conditions
-        if (data.conductivityPerCm > 1500.0) {
-            alertsTriggered.add(AlertTrigger("conductivity", "critical", "Conductivity is more than 1500 µS/cm - increased salinity"))
-        } else if (data.conductivityPerCm > 500.0) {
-            alertsTriggered.add(AlertTrigger("conductivity", "warning", "Conductivity is more than 500 µS/cm - elevated dissolved solids"))
-        }
-
-        // checking for combined conditions as recomended from the readme file
-        if (data.turbidityNtu > 5.0 && data.conductivityPerCm > 500.0) {
-            alertsTriggered.add(AlertTrigger("contamination", "warning", "Simultaneous turbidity & conductivity spike indicates possible agricultural problem such as chemical contamination"))
-        }
-
-        // overall status changes to critical if any alerts triggered were critical
-        // overall status changes to warning if there were any alerts triggered, but not critical
-        // overall status stays as normal if there were no alerts triggered
-        if (alertsTriggered.any { it.severity == "critical" }) {
-            ovrStatus = "critical"
-        } else if (alertsTriggered.isNotEmpty()) {
-            ovrStatus = "warning"
-        }
-        return EvaluationResult(ovrStatus,alertsTriggered)
+        return EvaluationResult(status = deriveStatus(alertsTriggered), alerts = alertsTriggered)
     }
 }
+
+private fun addPhAlert(
+    data: WaterQualityPayload,
+    alertsTriggered: MutableList<AlertEngine.AlertTrigger>,
+) {
+    when {
+        data.pH < MIN_CRITICAL_PH || data.pH > MAX_CRITICAL_PH -> {
+            alertsTriggered.add(
+                AlertEngine.AlertTrigger("pH", STATUS_CRITICAL, PH_CRITICAL_MESSAGE),
+            )
+        }
+
+        data.pH < MIN_WARNING_PH || data.pH > MAX_WARNING_PH -> {
+            alertsTriggered.add(
+                AlertEngine.AlertTrigger("pH", STATUS_WARNING, PH_WARNING_MESSAGE),
+            )
+        }
+    }
+}
+
+private fun addTurbidityAlert(
+    data: WaterQualityPayload,
+    alertsTriggered: MutableList<AlertEngine.AlertTrigger>,
+) {
+    when {
+        data.turbidityNtu > CRITICAL_TURBIDITY_NTU -> {
+            alertsTriggered.add(
+                AlertEngine.AlertTrigger("turbidity", STATUS_CRITICAL, TURBIDITY_CRITICAL_MESSAGE),
+            )
+        }
+
+        data.turbidityNtu > WARNING_TURBIDITY_NTU -> {
+            alertsTriggered.add(
+                AlertEngine.AlertTrigger("turbidity", STATUS_WARNING, TURBIDITY_WARNING_MESSAGE),
+            )
+        }
+    }
+}
+
+private fun addConductivityAlert(
+    data: WaterQualityPayload,
+    alertsTriggered: MutableList<AlertEngine.AlertTrigger>,
+) {
+    when {
+        data.conductivityPerCm > CRITICAL_CONDUCTIVITY_US_CM -> {
+            alertsTriggered.add(
+                AlertEngine.AlertTrigger(
+                    "conductivity",
+                    STATUS_CRITICAL,
+                    CONDUCTIVITY_CRITICAL_MESSAGE,
+                ),
+            )
+        }
+
+        data.conductivityPerCm > WARNING_CONDUCTIVITY_US_CM -> {
+            alertsTriggered.add(
+                AlertEngine.AlertTrigger(
+                    "conductivity",
+                    STATUS_WARNING,
+                    CONDUCTIVITY_WARNING_MESSAGE,
+                ),
+            )
+        }
+    }
+}
+
+private fun addCombinedAlert(
+    data: WaterQualityPayload,
+    alertsTriggered: MutableList<AlertEngine.AlertTrigger>,
+) {
+    if (
+        data.turbidityNtu > WARNING_TURBIDITY_NTU &&
+        data.conductivityPerCm > WARNING_CONDUCTIVITY_US_CM
+    ) {
+        alertsTriggered.add(
+            AlertEngine.AlertTrigger(
+                "contamination",
+                STATUS_WARNING,
+                CONTAMINATION_WARNING_MESSAGE,
+            ),
+        )
+    }
+}
+
+private fun deriveStatus(alertsTriggered: List<AlertEngine.AlertTrigger>): String =
+    when {
+        alertsTriggered.any { it.severity == STATUS_CRITICAL } -> STATUS_CRITICAL
+        alertsTriggered.isNotEmpty() -> STATUS_WARNING
+        else -> STATUS_NORMAL
+    }

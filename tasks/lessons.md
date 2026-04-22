@@ -1,0 +1,2 @@
+- 2026-04-22: When the user frames work as a role brief or sweep, do not default to implementation. Prevention rule: explicitly confirm whether the task is audit-only, and if corrected, switch immediately to read-only analysis with no product-code changes.
+- 2026-04-22: Preserve the repo's existing file layout unless the user explicitly asks for a move or restructure. Prevention rule: when improving lint/testability, prefer config changes or local fixes over relocating existing source files.

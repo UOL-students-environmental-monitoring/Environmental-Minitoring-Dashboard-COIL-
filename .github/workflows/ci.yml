@@ -1,36 +1,48 @@
-name: "Environmental Monitoring Dashboard CI"
+name: CI
 
 on:
   push:
-    branches:
-      - "main"
-      - "develop"
+    branches: ["**"]
   pull_request:
-    branches:
-      - "main"
-      - "develop"
+    branches: ["**"]
+  workflow_dispatch:
 
 jobs:
-  placeholder:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Placeholder - backend setup
-        run: |
-          echo "No backend project setup commands yet. Replace this with Gradle/Ktor setup when available."
-        working-directory: Ktor
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
 
-      - name: Placeholder - backend tests
-        run: |
-          echo "TODO: insert backend test command (e.g., ./gradlew test) once the suite exists."
-        working-directory: Ktor
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+        working-directory: ktor-sample
 
-      - name: Placeholder - frontend tests
-        run: |
-          echo "TODO: insert frontend test suite (e.g., npm run test) once the repo has frontend assets."
+      - name: Run Detekt
+        run: ./gradlew detekt
+        working-directory: ktor-sample
 
-      - name: Placeholder summary
-        run: |
-          echo "CI is waiting for concrete build/test steps. Update this workflow with the real commands when ready."
+      - name: Run KtLint
+        run: ./gradlew ktlintCheck
+        working-directory: ktor-sample
+
+      - name: Run tests
+        run: ./gradlew test
+        working-directory: ktor-sample
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-reports
+          path: |
+            ktor-sample/build/reports/tests/
+            ktor-sample/build/reports/detekt/
+            ktor-sample/build/reports/ktlint/

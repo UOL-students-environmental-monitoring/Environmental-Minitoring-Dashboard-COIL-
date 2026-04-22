@@ -1,10 +1,10 @@
-package com.example
+@file:Suppress("InvalidPackageDeclaration")
 
-// this file will handle all the incoming data from the json files gathered from the sensors
-// outputs it to the frontend
+package com.example
 
 import kotlinx.serialization.Serializable
 
+/** Incoming water quality reading submitted by a sensor client. */
 @Serializable
 data class WaterQualityPayload(
     val siteId: String,
@@ -14,9 +14,10 @@ data class WaterQualityPayload(
     val conductivityPerCm: Double,
     val waterTempC: Double,
     val waterLvlCm: Double,
-    val lightLux: Double
+    val lightLux: Double,
 )
 
+/** Public alert payload returned to API consumers. */
 @Serializable
 data class AlertDTO(
     val id: Int,
@@ -24,5 +25,18 @@ data class AlertDTO(
     val parameter: String,
     val severity: String,
     val message: String,
-    val timeStamp: String
+    val timeStamp: String,
+)
+
+/** Response body returned after a successful ingest request. */
+@Serializable
+data class IngestResponse(
+    val message: String,
+    val derivedState: String,
+)
+
+/** Error payload returned for invalid requests or server failures. */
+@Serializable
+data class ErrorResponse(
+    val error: String,
 )

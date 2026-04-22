@@ -1,234 +1,69 @@
 # Environmental Monitoring Dashboard — COMP2850 COIL Project
 
-A full-stack environmental monitoring system for **livestock farm management**, built with **Kotlin (Ktor)** on the backend and **HTML/CSS/JavaScript** on the frontend (served as static assets directly by Ktor). The system ingests sensor readings from farm sites, evaluates alert thresholds, and provides a live dashboard and reporting portal for farmers and agricultural field officers.
+This repo currently contains the backend side of our COMP2850 Environmental Monitoring Dashboard. The frontend from the coursework brief is still being built, so the main working part right now is the Ktor service in `ktor-sample/`, plus the project docs in `docs/`.
 
----
+## Current project state right now
 
-## Project Context
+- Backend stack: Kotlin, Ktor, Exposed, H2 for local development
+- QA gates now wired in: `test`, `detekt`, and `ktlintCheck`
+- Implemented API surface:
+  - `POST /api/ingest` to validate and store incoming water-quality readings
+  - `GET /api/alerts` to retrieve persisted alerts, with optional `site` and `severity` filters
+  - `GET /` and `GET /static/*` for the current server/static placeholders
+- Frontend status: still mostly placeholder, so the dashboard, charts, reporting portal, and proper UX/accessibility checks are not done yet
 
-Developed as part of the **COMP2850 COIL (Collaborative Online International Learning)** programme.
-
-The system monitors environmental conditions critical to livestock welfare — soil moisture, water levels, air quality, and temperature — across multiple farm sites. It surfaces real-time readings, historical trends, severity-graded alerts, and a reporting portal with CSV export.
-
-### Personas
-
-| Persona | Role | Core Need |
-|---------|------|-----------|
-| **Tom Hargreaves**, 58 | Arable & Livestock Farmer, Yorkshire | At-a-glance signal (safe / borderline / dangerous) — no jargon, works on mobile in the field |
-| **Priya Nair**, 29 | Agricultural Field Officer | Multi-site overview, historical trends, date/location filters, CSV export for reporting |
-
-Full persona detail: [`docs/Personas.md`](docs/Personas.md)
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Kotlin + Ktor + Gradle |
-| Frontend | HTML / CSS / JavaScript (ES Modules) — served by Ktor as static assets |
-| Charts | Chart.js (CDN) |
-| Database | H2 in-memory (dev) / PostgreSQL (prod) via Exposed ORM |
-| Linting | Detekt + KtLint |
-| In-code docs | KDoc on all public functions and classes |
-| CI/CD | GitHub Actions |
-| Testing | JUnit (backend unit + integration) |
-| Accessibility | WCAG 2.1 Level AA target — axe DevTools / WAVE every sprint |
-
----
-
-## Repository Structure
+## Repository structure
 
 ```text
 /
 ├── README.md
-├── SPRINT PLAN.md
+├── CLAUDE.md
 ├── docs/
-│   ├── Personas.md
-│   ├── wireframes/                   # Versioned — never delete old versions
-│   └── diagrams/                     # ERD and class diagrams — versioned
-├── frontend/                         # Stub — frontend lives inside Ktor (see below)
-└── backend/
-    ├── gradlew / build.gradle.kts / settings.gradle.kts
+│   └── Personas.md
+├── .github/
+│   └── workflows/ci.yml
+└── ktor-sample/
+    ├── build.gradle.kts
+    ├── gradlew
     ├── gradle/
-    └── src/
-        ├── main/kotlin/com/environmental/
-        │   ├── Application.kt        # Entry point
-        │   ├── Routing.kt            # Route registration + static file serving
-        │   ├── Serialization.kt      # JSON config
-        │   ├── models/               # SensorReading, Site, AlertRule, AlertEvent, AlertSeverity
-        │   ├── routes/               # ReadingsRoutes.kt, AlertsRoutes.kt
-        │   ├── services/             # AlertEngine.kt, ValidationService.kt
-        │   └── database/             # DatabaseConfig.kt, schemas
-        └── main/resources/
-            ├── application.yaml
-            ├── logback.xml
-            └── static/              # ← FRONTEND LIVES HERE (served by Ktor)
-                ├── index.html       # Live dashboard (P1)
-                ├── trends.html      # Historical trends + charts (P2)
-                ├── alerts.html      # Active alerts panel (P4)
-                ├── portal.html      # Reporting portal + CSV export (P5)
-                ├── css/style.css
-                └── js/
-                    ├── api.js       # All fetch calls to the backend API
-                    ├── charts.js    # Chart.js rendering helpers (P2)
-                    └── main.js      # Shared utilities
+    ├── src/
+    │   ├── main/
+    │   │   ├── kotlin/
+    │   │   └── resources/
+    │   └── test/
+    │       └── kotlin/
+    └── README.md
 ```
 
----
-
-## Team Roles
-
-| Person | Area |
-|--------|------|
-| **P1** | Dashboard UI & Layout (`index.html`) |
-| **P2** | Charts & Historical Trends (`trends.html`, `js/charts.js`) |
-| **P3** | Data Management & Validation (backend models, DB schemas, validation) |
-| **P4** | Alert System (`alerts.html`, `AlertEngine.kt`, `AlertsRoutes.kt`) |
-| **P5** | Analysis & Reporting Portal (`portal.html`) |
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- JDK 17+
-- Gradle (wrapper included — no global install needed)
-- A modern browser (Chrome, Firefox, Safari, Edge)
-
-### Run the backend (serves the frontend too)
+## Running the backend
 
 ```bash
-cd backend
-./gradlew run
+cd ktor-sample
+bash ./gradlew run
 ```
 
-Open [http://localhost:8080](http://localhost:8080) — all pages served directly by Ktor.
+The app runs on `http://localhost:8080`.
 
-### Run tests
+## Quality checks
+
+Run all backend checks from the `ktor-sample/` directory:
 
 ```bash
-cd backend
-./gradlew test
+bash ./gradlew test
+bash ./gradlew detekt
+bash ./gradlew ktlintCheck
 ```
 
-### Run linting
+## Testing coverage available now
 
-```bash
-cd backend
-./gradlew detekt
-./gradlew ktlintCheck
-```
+- Alert engine rule evaluation
+- API ingest validation for valid input, malformed timestamps, out-of-range values, and unknown sites
+- Alert retrieval for empty state, filtering, and unknown-site handling
 
----
+These checks are in place now so backend work can still be reviewed properly even before the frontend is finished.
 
-## API Endpoints
+## Documentation notes
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/readings?site=X&from=Y&to=Z` | Sensor readings for a site within a date range |
-| `GET` | `/alerts?site=X&severity=Y` | Alerts filtered by site and/or severity |
-| `GET` | `/sites` | All registered monitoring sites |
-| `GET` | `/*` | Static frontend assets served by Ktor |
-
-Full API documentation: GitHub Wiki → `Design/API-Reference`
-
----
-
-## Alert Severity Levels
-
-| Severity | Meaning |
-|----------|---------|
-| `NORMAL` | Reading within safe bounds |
-| `WARNING` | Reading approaching a critical threshold — monitor closely |
-| `CRITICAL` | Reading has exceeded a critical threshold — immediate action required |
-
-Threshold rules per sensor type: Wiki → `Requirements/Alert-Rules`
-
----
-
-## Key Features
-
-- **Live dashboard** — current sensor readings with colour-coded severity, designed for at-a-glance use on mobile (Tom persona)
-- **Historical trends** — interactive time-series charts with site and sensor type filtering
-- **Active alerts panel** — plain-language alert explanations per severity (no technical jargon)
-- **Reporting portal** — date range and site filters, cross-site summaries (min/max/avg), CSV export (Priya persona)
-- **Server-side validation** — null values, out-of-range inputs, unknown sensor types all rejected with descriptive errors
-- **Accessibility** — WCAG 2.1 Level AA target; skip link, ARIA roles, keyboard navigation, contrast-checked colours; tested every sprint with axe/WAVE
-
----
-
-## Development Workflow
-
-- **No direct commits to `main`** — all changes via feature branches and pull requests
-- Every PR requires at least one peer review and must pass CI before merge
-- Run `./gradlew detekt` and `./gradlew ktlintCheck` before opening a PR
-- KDoc comments required on all public functions and classes
-- AI usage must be noted inline: `// Used [model] to assist with X — lines Y–Z`
-
----
-
-## Testing Standards
-
-| Type | Scope |
-|------|-------|
-| Unit tests | Every function with logic; all boundary conditions |
-| Integration tests | Every API endpoint tested end-to-end |
-| UX / manual tests | Documented in Wiki with date, tester, tasks, findings |
-| Accessibility tests | axe/WAVE run every sprint; zero Level A WCAG errors required |
-| Security tests | Malformed, oversized, and out-of-range inputs tested explicitly |
-
----
-
-## Definition of Done
-
-1. Code is on a feature branch — never committed directly to `main`
-2. KDoc comments on all public functions
-3. Detekt + KtLint pass — zero significant issues
-4. Tests written and passing
-5. PR opened, reviewed, and approved by at least one teammate
-6. CI passes on the PR
-7. Merged to `main`
-
----
-
-## Key Dates
-
-| Milestone | Date |
-|-----------|------|
-| Submission deadline | 17:00 Friday 8 May |
-| Demo | Monday 11 May |
-| Retrospective 1 | End of Week 3 |
-| Retrospective 2 | End of Week 5 |
-
----
-
-## Key Risks & Mitigations
-
-| Risk | Mitigation |
-|------|-----------|
-| P3 API not ready — blocks P1, P2, P5 | P3 provides agreed mock JSON responses by end of Week 1 |
-| P5 duplicating P3's data logic | P5 must reuse P3's API only — enforced in PR review |
-| Tests written only at the end | Tests listed as tasks per week — non-optional |
-| WCAG failures found late | P1 runs axe/WAVE every sprint and logs results |
-| Documentation left to the last week | Wiki pages assigned by name and sprint — stubs created in Week 1 |
-| Main branch broken | Branch protection + required CI pass before any merge to `main` |
-
----
-
-## Documentation
-
-All design and requirements documentation lives in the **GitHub Wiki**:
-
-- `Requirements/COIL-Summary` — agreed scope and environmental focus
-- `Requirements/Data-Model` — sensor data fields and schema
-- `Requirements/Personas` — Tom (farmer) and Priya (field officer) personas
-- `Requirements/User-Stories` — full backlog with MoSCoW priority and story points
-- `Requirements/Alert-Rules` — threshold rules per sensor type
-- `Design/API-Reference` — all endpoints with example requests and error codes
-- `Design/Architecture` — class diagram
-- `Design/Database` — ERD / schema diagram
-- `Design/Wireframes` — all wireframe versions (never deleted — versioned as v1, v2, v3)
-- `Testing/Accessibility-Log` — axe/WAVE results per sprint
-- `Testing/UX-Tests` — user test records
+- `docs/Personas.md` still needs cleaning up so it matches the agreed personas
+- The wiki, project board, branch protection, accessibility log, and UX testing still need doing on GitHub
+- We should not document planned frontend screens as if they already exist
