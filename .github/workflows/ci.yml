@@ -20,12 +20,12 @@ jobs:
       - name: Placeholder - backend setup
         run: |
           echo "No backend project setup commands yet. Replace this with Gradle/Ktor setup when available."
-        working-directory: Ktor
+        working-directory: ktor-sample
 
       - name: Placeholder - backend tests
         run: |
           echo "TODO: insert backend test command (e.g., ./gradlew test) once the suite exists."
-        working-directory: Ktor
+        working-directory: ktor-sample
 
       - name: Placeholder - frontend tests
         run: |
