@@ -199,7 +199,7 @@ fun Application.configureRouting() {
             val siteExists = transaction {
                 Sites.selectAll().where { Sites.id eq siteParameter }.count() > 0
             }
-            if (!siteExists) {
+            if ( !siteExists ) {
                 call.respond(HttpStatusCode.NotFound,mapOf("error" to "No site found: $siteParameter"))
                 return@get
             }
