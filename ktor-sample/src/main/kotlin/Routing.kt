@@ -9,6 +9,7 @@ import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
+import io.ktor.server.thymeleaf.ThymeleafContent
 
 fun Application.configureRouting() {
     routing {
@@ -19,6 +20,12 @@ fun Application.configureRouting() {
         // root will show the dashboard
         get("/") {
             call.respondRedirect("/static/index.html")
+        }
+
+        // serves the Trends page as a Thymeleaf template
+        // ThymeleafContent("trends", emptyMap()) tells Ktor to look for templates/thymeleaf/trends.html and render it
+        get("/trends") {
+            call.respond(ThymeleafContent("trends", emptyMap()))
         }
 
         // -------------------------------------------------------------------
