@@ -1,7 +1,116 @@
-<html>
- <head>
- </head>
- <body>
-   <h1>Hello Ktor!</h1>
- </body>
+<!doctype html>
+<!-- Used GPT-5 to assist with dashboard implementation - lines 1-116 -->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Environmental Monitoring Dashboard</title>
+        <link rel="stylesheet" href="/static/css/style.css" />
+        <script type="module" src="/static/js/main.js"></script>
+    </head>
+    <body>
+        <a class="skip-link" href="#dashboard-main">Skip to dashboard</a>
+
+        <header class="site-header">
+            <div>
+                <p class="eyebrow">Livestock environment</p>
+                <h1>Environmental Monitoring</h1>
+            </div>
+            <nav class="top-nav" aria-label="Primary">
+                <a class="is-active" href="/static/index.html" aria-current="page">Dashboard</a>
+                <a href="#metric-cards">Trends</a>
+                <a href="#alerts-panel">Alerts</a>
+            </nav>
+        </header>
+
+        <main id="dashboard-main" class="dashboard-shell">
+            <section class="wireframe-panel dashboard-panel" aria-labelledby="dashboard-title">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Dashboard</p>
+                        <h2 id="dashboard-title">Farm status map</h2>
+                    </div>
+                    <div class="status-pill" id="sync-status" role="status">Loading</div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <section class="map-card" aria-labelledby="map-title">
+                        <div class="section-heading">
+                            <h3 id="map-title">GPS map</h3>
+                            <select id="site-filter" aria-label="Choose herd">
+                                <option value="all">All herds</option>
+                            </select>
+                        </div>
+                        <div id="map-state" class="state-message" role="status">Loading site positions...</div>
+                        <div id="site-map" class="site-map" aria-label="Map of herd positions"></div>
+                    </section>
+
+                    <section id="metric-cards" class="metrics-grid" aria-label="Current metrics">
+                        <article class="metric-card">
+                            <span>Active herds</span>
+                            <strong id="metric-sites">--</strong>
+                        </article>
+                        <article class="metric-card">
+                            <span>Avg temperature</span>
+                            <strong id="metric-temp">--</strong>
+                        </article>
+                        <article class="metric-card">
+                            <span>Motion level</span>
+                            <strong id="metric-motion">--</strong>
+                        </article>
+                        <article class="metric-card metric-alert">
+                            <span>Open alerts</span>
+                            <strong id="metric-alerts">--</strong>
+                        </article>
+                    </section>
+
+                    <section id="alerts-panel" class="alerts-panel" aria-labelledby="alerts-title">
+                        <div class="section-heading">
+                            <h3 id="alerts-title">Cattle alerts</h3>
+                            <select id="alert-filter" aria-label="Filter alerts by herd">
+                                <option value="all">All herds</option>
+                            </select>
+                        </div>
+                        <div id="alerts-state" class="state-message" role="status">Loading alerts...</div>
+                        <ul id="alerts-list" class="alerts-list" aria-live="polite"></ul>
+                    </section>
+                </div>
+            </section>
+
+            <aside class="side-column" aria-label="Dashboard support information">
+                <section class="wireframe-panel announcement-panel" aria-labelledby="announcements-title">
+                    <p class="eyebrow">Announcements</p>
+                    <h2 id="announcements-title">Today</h2>
+                    <div class="announcement-list">
+                        <article>
+                            <strong>Morning check</strong>
+                            <p>Review low activity and heat warnings before the next field visit.</p>
+                        </article>
+                        <article>
+                            <strong>Data note</strong>
+                            <p>Dashboard values update from the latest readings stored by Ktor.</p>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="wireframe-panel return-panel" aria-labelledby="return-title">
+                    <p class="eyebrow">Links to return</p>
+                    <h2 id="return-title">Quick actions</h2>
+                    <a href="#dashboard-main">Back to dashboard</a>
+                    <a href="#alerts-panel">Review alerts</a>
+                    <a href="#metric-cards">View metrics</a>
+                </section>
+            </aside>
+        </main>
+
+        <template id="alert-template">
+            <li class="alert-item">
+                <div>
+                    <strong data-alert-message></strong>
+                    <span data-alert-meta></span>
+                </div>
+                <span data-alert-severity class="severity-badge"></span>
+            </li>
+        </template>
+    </body>
 </html>
