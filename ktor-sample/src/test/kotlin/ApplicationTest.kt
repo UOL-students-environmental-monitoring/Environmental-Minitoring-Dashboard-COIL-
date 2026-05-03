@@ -51,13 +51,52 @@ class ApplicationTest {
     // Root
 
     @Test
-    fun `GET root returns 200 or redirect`() = testApplication {
+    fun `GET root redirects to static dashboard`() = testApplication {
         application { module() }
-        val response = client.get("/")
-        assertTrue(
-            response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Found,
-            "Expected 200 or 302 but got ${response.status}"
-        )
+
+        val noRedirectClient = createClient {
+            followRedirects = false
+        }
+
+        val response = noRedirectClient.get("/")
+
+        assertEquals(HttpStatusCode.Found, response.status)
+        assertEquals("/static/index.html", response.headers[HttpHeaders.Location])
+    }
+
+    @Test
+    fun `GET dashboard page returns wireframe sections`() = testApplication {
+        application { module() }
+
+        val response = client.get("/static/index.html")
+        val body = response.bodyAsText()
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(body.contains("Environmental Monitoring"))
+        assertTrue(body.contains("Farm status map"))
+        assertTrue(body.contains("GPS map"))
+        assertTrue(body.contains("Current metrics"))
+        assertTrue(body.contains("Cattle alerts"))
+        assertTrue(body.contains("Announcements"))
+        assertTrue(body.contains("Links to return"))
+    }
+
+    @Test
+    fun `GET dashboard static assets returns css and javascript`() = testApplication {
+        application { module() }
+
+        val cssResponse = client.get("/static/css/style.css")
+        val apiResponse = client.get("/static/js/api.js")
+        val mainResponse = client.get("/static/js/main.js")
+
+        assertEquals(HttpStatusCode.OK, cssResponse.status)
+        assertTrue(cssResponse.bodyAsText().contains(".dashboard-shell"))
+
+        assertEquals(HttpStatusCode.OK, apiResponse.status)
+        assertTrue(apiResponse.bodyAsText().contains("getDashboardData"))
+
+        assertEquals(HttpStatusCode.OK, mainResponse.status)
+        assertTrue(mainResponse.bodyAsText().contains("initialiseDashboard"))
     }
 
     // POST /api/ingest , happy path
