@@ -4,12 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Environmental Monitor - Trends</title>
-    <link rel="stylesheet" th:href="@{/static/css/trends.css}" />
+    <link rel="stylesheet" href="/static/css/trends.css" />
     <!--
-    Chart.js is a free JavaScript library that draws charts on a <canvas>.
-    loads before trend.js since trend.js uses it
+    Chart.js must load before trends.js so new Chart() is defined when drawChart runs.
+    trends.js uses defer so it executes after the DOM is ready.
     -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/static/js/trends.js" defer></script>
 </head>
 
 <body>
@@ -17,13 +18,11 @@
 <header>
     <h1>Environmental Monitor</h1>
     <nav>
-        <!--
-            th:href="@{/dashboard}" links to the Ktor route/dashboard.
-        -->
-        <a th:href="@{/dashboard}">Dashboard</a>
-        <a th:href="@{/trends}" class="active">Trends</a>
-        <a th:href="@{/alerts}">Alerts</a>
-        <a th:href="@{/portal}">Portal</a>
+        <!-- href="/trends" class="active" links to the Ktor route/dashboard -->
+        <a href="/static/index.html">Dashboard</a>
+        <a href="/trends" class="active">Trends</a>
+        <a href="/static/alerts.html">Alerts</a>
+        <a href="/static/portal.html">Portal</a>
 
     </nav>
 </header>
@@ -75,10 +74,10 @@
         </div>
 
         <!-- shown when data is loading from the API -->
-        <div id="loading-message">Chart is loading...</div>
+        <div id="loading-message" style="display:none">Chart is loading...</div>
 
         <!-- shown only if the API call fails -->
-        <div id="no-load-message">Could not load data</div>
+        <div id="error-message" style="display:none">Could not load data</div>
 
         <!--
             Chart.js draws the graph onto this <canvas> element,
