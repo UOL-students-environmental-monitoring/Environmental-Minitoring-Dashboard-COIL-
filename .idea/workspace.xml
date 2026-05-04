@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="355aae3d-b2bc-42ce-b677-4e2cf1b53401" name="Changes" comment="trends webpage v2 + js" />
+    <list default="true" id="355aae3d-b2bc-42ce-b677-4e2cf1b53401" name="Changes" comment="trends webpage v2 + js">
+      <change afterPath="$PROJECT_DIR$/ktor-sample/src/main/resources/static/css/trends.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ktor-sample/src/main/resources/static/js/trends.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ktor-sample/src/main/resources/templates/thymeleaf/trends.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -96,7 +101,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "Cherry-picking in main",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/knngu/OneDrive/Documents/Python projects/Year 2 Final Project/Environmental-Minitoring-Dashboard-COIL-",
     "project.structure.last.edited": "SDKs",
@@ -289,7 +294,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="main" />
+                        <option value="origin/main" />
                       </list>
                     </value>
                   </entry>
