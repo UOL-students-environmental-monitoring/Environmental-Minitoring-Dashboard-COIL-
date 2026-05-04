@@ -1,0 +1,757 @@
+<!-- Alerts Page, Need to factor in how this page can serve each persona
+ For Tom, needs to be;
+ - Mobile Responsive (convenient for when he is out on the field, can check his smartphone)
+ - Page needs to load instantly and show him card with either critical! or warning!
+
+ For Priya;
+ - Can have every alert show the Site ID, so she can see which herd triggered it across alls sites
+
+ For Sipho;
+ - Page can be designed to be readable at night
+
+ For Dr. Sarah Van de Merwe;
+ - A filter to switch between conditions like health indicators. A timeline of a herd's condition before arriving on site
+-->
+
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=width-device, initial-scale=1.0" />
+    <title>Alerts - Environmental Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+
+    
+       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+       :root {
+         --bg:             #f7f6f3;
+         --surface:        #ffffff;
+         --border:         #dddbd4;
+         --text-primary:   #1a1916;
+         --text-secondary: #6b6860;
+         --text-muted:     #9e9b94;
+         --critical:       #c0392b;
+         --warning:        #b8650a;
+         --font-body:      'DM Sans', sans-serif;
+         --font-mono:      'IBM Plex Mono', monospace;
+         --radius:         6px;
+       }
+
+       body {
+         font-family: var(--font-body);
+         background: var(--bg);
+         color: var(--text-primary);
+         min-height: 100vh;
+         font-size: 15px;
+       }
+
+       header {
+         background: var(--surface);
+         border-bottom: 1px solid var(--border);
+         position: sticky;
+         top: 0;
+         z-index: 100;
+       }
+
+       .nav-inner {
+         max-width: 960px;
+         margin: 0 auto;
+         padding: 0 24px;
+         display: flex;
+         align-items: stretch;
+         height: 52px;
+       }
+
+       .nav-brand {
+         font-family: var(--font-mono);
+         font-size: 12px;
+         font-weight: 500;
+         letter-spacing: 0.05em;
+         text-transform: uppercase;
+         color: var(--text-primary);
+         display: flex;
+         align-items: center;
+         padding-right: 28px;
+         border-right: 1px solid var(--border);
+         margin-right: 4px;
+         white-space: nowrap;
+       }
+       .nav-tabs { display: flex; align-items: stretch; }
+       
+       .nav-tab {
+         display: flex;
+         align-items: center;
+         padding: 0 18px;
+         font-size: 13.5px;
+         color: var(--text-secondary);
+         text-decoration: none;
+         border-bottom: 2px solid transparent;
+         transition: color 0.12s, border-color 0.12s;
+         white-space: nowrap;
+       }
+
+       .nav-tab:hover { color: var(--text-primary); }
+
+       .nav-tab.active {
+         color: var(--text-primary);
+         font-weight: 500;
+         border-bottom-color: var(--text-primary);
+       }
+
+       .page {
+         max-width: 960px;
+         margin: 0 auto;
+         padding: 28px 24px;
+       }
+
+       .page-header {
+         display: flex;
+         align-items: baseline;
+         justify-content: space-between;
+         margin-bottom: 16px;
+       }
+
+       .page-title {
+         font-size: 20px;
+         font-weight: 600;
+         letter-spacing: -0.01em; 
+       }
+       
+       .page-meta {
+         font-family: var(--font-mono);
+         font-size: 12px;
+         color: var(--text-muted);
+       }
+
+
+
+       .filter-bar {
+         display: flex;
+         gap: 6px;
+         margin-bottom: 14px;
+         flex-wrap: wrap;
+         align-items: center;
+         padding-bottom: 14px;
+         border-bottom: 1px solid var(--border);
+       }
+ 
+       .filter-chip {
+         font-family: var(--font-mono);
+         font-size: 11.5px;
+         padding: 4px 12px;
+         border-radius: 20px;
+         border: 1px solid var(--border);
+         background: var(--surface);
+         color: var(--text-secondary);
+         cursor: pointer;
+         transition: all 0.12s;
+       }
+ 
+       .filter-chip:hover {
+         border-color: var(--text-primary);
+         color: var(--text-primary);
+       }
+ 
+       .filter-chip.active {
+         background: var(--text-primary);
+         color: #fff;
+         border-color: var(--text-primary);
+       }
+ 
+       .filter-sep {
+         width: 1px;
+         height: 18px;
+         background: var(--border);
+         margin: 0 2px;
+       }
+ 
+       .site-filter {
+         margin-left: auto;
+         display: flex;
+         align-items: center;
+         gap: 6px;
+       }
+ 
+       .site-filter label {
+         font-family: var(--font-mono);
+         font-size: 11.5px;
+         color: var(--text-muted);
+       }
+
+       .site-filter select {
+         font-family: var(--font-mono);
+         font-size: 11.5px;
+         border: 1px solid var(--border);
+         border-radius: var(--radius);
+         padding: 4px 8px;
+         background: var(--surface);
+         color: var(--text-primary);
+         cursor: pointer;
+       }
+
+       .source-toggle {
+         display: flex;
+         align-items: center;
+         gap: 6px;
+         margin-left: 8px;
+       }
+ 
+       .source-toggle label {
+         font-family: var(--font-mono);
+         font-size: 11.5px;
+         color: var(--text-muted);
+       }
+
+
+       .source-toggle select {
+         font-family: var(--font-mono);
+         font-size: 11.5px;
+         border: 1px solid var(--border);
+         border-radius: var(--radius);
+         padding: 4px 8px;
+         background: var(--surface);
+         color: var(--text-primary);
+         cursor: pointer;
+       }
+
+  
+       
+       .alerts-list {
+         display: flex;
+         flex-direction: column;
+         gap: 6px;
+       }
+
+       .state-msg {
+         text-align: center;
+         padding: 56px 0;
+         font-family: var(--font-mono);
+         font-size: 13px;
+         color: var(--text-muted);
+       }
+
+       .alert-card {
+         background: var(--surface);
+         border: 1px solid var(--border);
+         border-radius: var(--radius);
+         padding: 13px 18px;
+         display: grid;
+         grid-template-columns: 110px 1fr;
+         gap: 0 16px;
+         align-items: start;
+         transition: border-color 0.12s;
+       }
+
+       .alert-card:hover { border-color: #b0ada6 }
+
+       .alert-card.from-readings {
+         border-left: 3px solid var(--border);
+       }
+
+       .alert-severity {
+         font-family: var(--font-mono);
+         font-size: 11px;
+         font-weight: 500;
+         letter-spacing: 0.05em;
+         text-transform: uppercase;
+         padding-top: 2px;
+         line-height: 1.6;
+       }
+
+       .alert-card.critical .alert-severity { color: var(--critical); }
+       .alert-card.warning  .alert-severity { color: var(--warning); }
+       .alert-card.normal   .alert-severity { color: var(--text-muted); }
+
+       .alert-top-row {
+         display: flex;
+         align-items: center;
+         gap: 8px;
+         margin-bottom: 3px;
+         flex-wrap: wrap;
+       }
+
+       .alert-param {
+         font-size: 13.5px;
+         font-weight: 500;
+       }
+
+       .alert-tag {
+         font-family: var(--font-mono);
+         font-size: 10px;
+         color: var(--text-muted);
+         background: var(--bg);
+         border: 1px solid var(--border);
+         border-radius: 3px;
+         padding: 1px 5px;
+       }
+
+       .source-tag {
+         font-family: var(--font-mono);
+         font-size: 10px;
+         color: var(--text-muted);
+         background: var(--bg);
+         border: 1px solid var(--border);
+         border-radius: 3px;
+         padding: 1px 5px;
+         margin-left: auto;
+       }
+
+       .alert-message {
+         font-size: 13.5px;
+         color: var(--text-secondary);
+         line-height: 1.45;
+         margin-bottom: 7px;
+       }
+
+       .alert-footer {
+         display: flex;
+         align-items: center;
+         gap: 10px;
+         flex-wrap: wrap;
+       }
+
+       .alert-timestamp {
+         font-family: var(--font-mono);
+         font-size: 11px;
+         color: var(--text-muted);     
+       }
+
+       .alert-site {
+         font-family: var(--font-mono);
+         font-size: 11px;
+         color: var(--text-muted);
+       }
+
+       .alert-site::before { content: '· ';}
+
+       .dismiss-btn {
+         margin-left: auto;
+         font-family: var(--font-mono);
+         font-size: 11px;
+         color: var(--text-muted);
+         background: none;
+         border: 1px solid var(--border);
+         border-radius: 4px;
+         padding: 3px 9px;
+         cursor: pointer;
+         transition: all 0.12s;
+       }
+
+       .dismiss-btn:hover {
+         color: var(--text-primary);
+         border-color: #b0ada6;
+       }
+
+       .gps-btn {
+         font-family: var(--font-mono);
+         font-size: 11px;
+         color: var(--critical);
+         background: none;
+         border: 1px solid var(--critical);
+         border-radius: 4px;
+         padding: 3px 9px;
+         cursor: pointer;
+         transition: all 0.12s;
+       }
+
+       .gps-btn:hover { background: var(--critical); color: #fff; }
+
+       .alert-card.removing {
+         opacity: 0;
+         transform: translateX(6px);
+         transition: opacity 0.18s, transform 0.18s;
+       }
+
+       #toast {
+         position: fixed;
+         bottom: 24px;
+         right: 24px;
+         background: var(--text-primary);
+         color: #fff;
+         font-family: var(--font-mono);
+         font-size: 12px;
+         padding: 9px 16px;
+         border-radius: var(--radius);
+         opacity: 0;
+         pointer-events: none;
+         transition: opacity 0.18s;
+         z-index: 999;
+       }
+
+       #toast.show { opacity: 1; }
+
+       @media (max-width: 600px) {
+         .alert-card { grid-template-columns: 72px 1fr; }
+         .site-filter { display: none; }
+         .source-toggle { display: none; }
+       }
+   </style>
+</head>
+<body>
+
+  <!-- For the navigation, the user must be able to go through each page with no problem
+   so must make mine and team mates pages linked together
+  -->
+
+<header>
+  <div class="nav-inner">
+    <span class="nav-brand">Environmental Monitor</span>
+    <nav class="nav-tabs">
+      <a href="/static/dashboard.html" class="nav-tab">Dashboard</a>
+      <a href="/static/trends.html" class="nav-tab">Trends</a>
+      <a href="/static/alerts.html" class="nav-tab active">Alerts</a>
+      <a href="/static/portal.html" class="nav-tab">Portal</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+ 
+  <div class="page-header">
+    <h1 class="page-title">Alerts</h1>
+    <span class="page-meta" id="count-label">Loading…</span>
+  </div>
+<!-- Buttons for the actual site page -->
+  <div class="filter-bar">
+    <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-chip"        onclick="setFilter('critical', this)">Critical</button>
+    <button class="filter-chip"        onclick="setFilter('warning', this)">Warning</button>
+    <div class="filter-sep"></div>
+
+    <button class="filter-chip" onclick="setFilter('temperature', this)">Heat Stress</button>
+    <button class="filter-chip" onclick="setFilter('low activity', this)">Low activity</button>
+    <button class="filter-chip" onclick="setFilter('flee', this)">Flee Events</button>
+    <button class="filter-chip" onclick="setFilter('heat_collapse', this)">Heat Collapse</button>
+  </div>
+
+  
+  <!-- Fresh data i.e. fresh information/refresh option available here-->
+  <div class="site-filter">
+    <label for="site-select">Site:</label>
+    <select id="site-select" onchange="setSite(this.value)">
+      <option value="">All sites</option>
+      <option value="herd_cattle_A">Cattle Herd A</option>
+      <option value="herd_goat_B">Goat Herd B</option>
+    </select>
+  </div>
+
+  <div class="source-toggle">
+    <label for="source-select">Show:</label>
+    <select id="source-select" onchange="setSource(this.value)">
+    <option value="both">Alerts + Readings</option>
+    <option value="alerts">Alerts only</option>
+    <option value="readings">CSV readings only</option>
+    </select>
+  </div>
+ 
+ </div>
+
+  <div class="alerts-list" id="alerts-list">
+    <div class="state-msg">Loading alerts..</div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──
+  let alertsData   = [];   // from GET /api/alerts   → AlertDTO[]
+  let readingsData = [];   // from GET /api/readings  → ReadingDTO[] (CSV)
+  let activeFilter = 'all';
+  let activeSite   = '';
+  let activeSource = 'both';
+ 
+  // ── Boot — fetch both endpoints in parallel ──
+  async function init() {
+    try {
+      // Build URLs — both support optional ?site= filter (Routing.kt)
+      const siteParam = activeSite ? '?site=' + encodeURIComponent(activeSite) : '';
+ 
+      // Fetch GET /api/alerts and GET /api/readings simultaneously
+      // /api/readings requires site param — default to herd_cattle_A if none selected
+      const readingsSite = activeSite || 'herd_cattle_A';
+ 
+      const [alertsRes, readingsRes] = await Promise.all([
+        fetch('/api/alerts' + siteParam),
+        fetch('/api/readings?site=' + encodeURIComponent(readingsSite))
+      ]);
+ 
+      alertsData   = alertsRes.ok   ? await alertsRes.json()   : [];
+      readingsData = readingsRes.ok ? await readingsRes.json() : [];
+ 
+      render();
+    } catch (err) {
+      document.getElementById('alerts-list').innerHTML =
+        '<div class="state-msg" style="color:#c0392b;">Could not reach the server. Is it running?<br><small>Start with: ./gradlew run</small></div>';
+    }
+  }
+ 
+  // ── Render ──
+  // Combines AlertDTO[] and ReadingDTO[] into one unified list
+  function render() {
+    const list = document.getElementById('alerts-list');
+    list.innerHTML = '';
+ 
+    // Build a unified card list depending on source toggle
+    let cards = [];
+ 
+    // Cards from AlertsLog (POST /api/ingest triggered alerts)
+    if (activeSource === 'both' || activeSource === 'alerts') {
+      alertsData.forEach(a => {
+        cards.push({
+          id:        'alert-' + a.id,
+          rawId:     a.id,
+          severity:  a.severity.toLowerCase(),    // 'critical' or 'warning'
+          parameter: a.parameter,                  // matches AlertEngine param names
+          message:   a.message,
+          timestamp: a.timeStamp,
+          siteId:    a.siteId,
+          isFlee:    a.parameter === 'flee',
+          source:    'alert'
+        });
+      });
+    }
+ 
+    // Cards from LivestockReadings (CSV seeded by Databases.kt)
+    // Only include rows that have at least one alert flag set
+    if (activeSource === 'both' || activeSource === 'readings') {
+      readingsData.forEach(r => {
+        if (!r.alertTriggered) return; // skip normal/clean readings
+ 
+        // Derive parameter and severity from the flag columns
+        // mirrors what AlertEngine.kt would have produced
+        let parameter = 'unknown';
+        let severity  = r.status.toLowerCase(); // 'critical' or 'warning' from CSV column
+ 
+        if (r.alertFlee)        parameter = 'flee';
+        else if (r.alertLowActivity) parameter = 'low_activity';
+        else if (r.alertGeofence)    parameter = 'geofence';
+ 
+        // Build a human-readable message from the reading data
+        const tempMsg  = r.ambientTemperatureC > 35
+          ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + '°C — critical heat stress risk.'
+          : r.ambientTemperatureC > 30
+            ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + '°C — monitor for heat stress.'
+            : '';
+ 
+        const accelMsg = r.alertFlee
+          ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g — flee event detected.'
+          : r.alertLowActivity
+            ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g — low activity, possible illness.'
+            : '';
+ 
+        const message = [tempMsg, accelMsg].filter(Boolean).join(' ') || 'Alert flag raised — check reading.';
+ 
+        cards.push({
+          id:        'reading-' + r.id,
+          rawId:     r.id,
+          severity:  severity,
+          parameter: parameter,
+          message:   message,
+          timestamp: r.timeStamp,
+          siteId:    r.siteId,
+          isFlee:    r.alertFlee,
+          source:    'reading'
+        });
+      });
+    }
+ 
+    // Sort — critical first, then by timestamp descending
+    cards.sort((a, b) => {
+      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+      if (b.severity === 'critical' && a.severity !== 'critical') return  1;
+      return b.timestamp.localeCompare(a.timestamp);
+    });
+ 
+    // Apply filter chip
+    const filtered = cards.filter(c => {
+      if (activeFilter === 'all')           return true;
+      if (activeFilter === 'critical')      return c.severity === 'critical';
+      if (activeFilter === 'warning')       return c.severity === 'warning';
+      return c.parameter === activeFilter;  // 'temperature','low_activity','flee','heat_collapse'
+    });
+ 
+    // Update count label
+    document.getElementById('count-label').textContent =
+      filtered.length === cards.length
+        ? cards.length + ' alerts'
+        : filtered.length + ' of ' + cards.length + ' alerts';
+ 
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="state-msg">No alerts match this filter.</div>';
+      return;
+    }
+ 
+    // Render cards
+    filtered.forEach((card, i) => {
+      const el = document.createElement('div');
+      el.className = 'alert-card ' + card.severity + (card.source === 'reading' ? ' from-readings' : '');
+      el.dataset.uid = card.id;
+ 
+      const gpsBtn = card.isFlee
+        ? `<button class="gps-btn" onclick="trackGPS('${card.id}', '${card.siteId}')">Track GPS</button>` : '';
+ 
+      el.innerHTML = `
+        <div class="alert-severity">${card.severity}</div>
+        <div>
+          <div class="alert-top-row">
+            <span class="alert-param">${formatParam(card.parameter)}</span>
+            <span class="alert-tag">${card.parameter}</span>
+            <span class="source-tag">${card.source === 'reading' ? 'csv' : 'live'}</span>
+          </div>
+          <p class="alert-message">${card.message}</p>
+          <div class="alert-footer">
+            <span class="alert-timestamp">${card.timestamp}</span>
+            <span class="alert-site">${card.siteId}</span>
+            ${gpsBtn}
+            <button class="dismiss-btn" onclick="dismiss('${card.id}')">Dismiss</button>
+          </div>
+        </div>
+      `;
+ 
+      list.appendChild(el);
+    });
+  }
+ 
+  // ── Helpers ──
+ 
+  // Maps AlertEngine.kt parameter names to readable display labels
+  function formatParam(p) {
+    const labels = {
+      temperature:   'Heat Stress — Temperature',
+      low_activity:  'Low Activity Alert',
+      flee:          'Flee / Rustling Event',
+      heat_collapse: 'Heat Collapse — Combined Alert',
+      geofence:      'Geofence Breach',
+      unknown:       'Alert Flagged'
+    };
+    return labels[p] || p;
+  }
+ 
+
+  function setFilter(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+ 
+  // Site dropdown — re-fetches from both APIs with new ?site= param
+  function setSite(val) {
+    activeSite = val;
+    init();
+  }
+ 
+  // Source toggle — switches between showing alerts, readings, or both
+  function setSource(val) {
+    activeSource = val;
+    render();
+  }
+ 
+  // Dismiss a card — removes it from the UI and the local data array
+  function dismiss(uid) {
+    const el = document.querySelector(`[data-uid="${uid}"]`);
+    if (!el) return;
+    el.classList.add('removing');
+    setTimeout(() => {
+      el.remove();
+      // Remove from local data so filter re-renders don't bring it back
+      if (uid.startsWith('alert-')) {
+        const id = parseInt(uid.replace('alert-', ''));
+        alertsData = alertsData.filter(a => a.id !== id);
+      } else {
+        const id = parseInt(uid.replace('reading-', ''));
+        readingsData = readingsData.filter(r => r.id !== id);
+      }
+      render();
+    }, 200);
+  }
+ 
+
+  function trackGPS(uid, siteId) {
+    const rawId = uid.replace('alert-', '').replace('reading-', '');
+    showToast('Opening GPS tracker…');
+    setTimeout(() => {
+      window.location.href = '/static/portal.html?gps=' + rawId + '&site=' + encodeURIComponent(siteId); }, 700);
+  }
+ 
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+ 
+  // ── Start — runs when page is navigated to ──
+  init();
+</script>
+ 
+</body>
+</html>
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
