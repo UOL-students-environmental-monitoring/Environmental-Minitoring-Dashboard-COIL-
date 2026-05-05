@@ -1,5 +1,4 @@
 <!doctype html>
-<!-- Used GPT-5 to assist with dashboard implementation - lines 1-116 -->
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -34,6 +33,7 @@
                 </div>
 
                 <div class="dashboard-grid">
+                    <!-- The map, summary metrics, and alert list all read from the same dashboard payload. -->
                     <section class="map-card" aria-labelledby="map-title">
                         <div class="section-heading">
                             <h3 id="map-title">GPS map</h3>
@@ -103,6 +103,7 @@
             </aside>
         </main>
 
+        <!-- Alerts are rendered from this template so the list stays consistent with the live data. -->
         <template id="alert-template">
             <li class="alert-item">
                 <div>

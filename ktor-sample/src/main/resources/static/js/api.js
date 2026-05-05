@@ -1,4 +1,3 @@
-// Used GPT-5 to assist with dashboard API wiring - lines 1-63
 const jsonHeaders = {
     Accept: "application/json",
 };
@@ -37,6 +36,7 @@ export async function getReadings(siteId) {
 
 export async function getDashboardData() {
     const sites = await getSites();
+    // A missing reading for one herd should not stop the whole dashboard from loading.
     const readingResults = await Promise.allSettled(
         sites.map(async (site) => ({
             site,

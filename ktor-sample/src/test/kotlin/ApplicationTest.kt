@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 class ApplicationTest {
 
-    // a normal, healthy livestock reading , no alerts should be raised
+    /** A valid baseline reading that should be accepted without raising alerts. */
     private val validPayload = """
         {
             "siteId": "herd_cattle_A",
@@ -26,25 +26,24 @@ class ApplicationTest {
     """.trimIndent()
 
     /**
-     * Runs before every single test.
-     * Clears the two tables that tests write to, so each test
-     * starts with a clean slate. Sites are NOT cleared because
-     * they are seeded once at startup and tests depend on them existing.
+     * Clears the tables that these tests mutate.
+     *
+     * Seeded sites stay in place because the application inserts them during startup
+     * and several route tests rely on those records already existing.
      */
     @BeforeTest
     fun clearTables() {
         /**
-         * We need the app to have initialised the DB at least once before we can clear it.
-         *  testApplication handles that, but @BeforeTest runs outside of it
-         * , so we guard with a try/catch.
-         **/
+         * The first test run may reach this hook before Ktor has created the tables,
+         * so cleanup needs to tolerate that startup edge case.
+         */
         try {
             transaction {
                 AlertsLog.deleteAll()
                 LivestockReadings.deleteAll()
             }
         } catch (e: Exception) {
-            // Tables may not exist yet on the very first run , that is fine
+            // Ignore the first-run case where the schema has not been initialised yet.
         }
     }
 
@@ -130,7 +129,7 @@ class ApplicationTest {
     fun `POST ingest critical temperature returns derived status critical`() = testApplication {
         application { module() }
 
-        // 38°C is above the critical threshold of 35°C
+        // 38 C sits above the critical temperature threshold.
         val criticalPayload = validPayload.replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 38.0")
 
         val response = client.post("/api/ingest") {
@@ -146,7 +145,7 @@ class ApplicationTest {
     fun `POST ingest warning temperature returns derived status warning`() = testApplication {
         application { module() }
 
-        // 32°C is between the warning (30°C) and critical (35°C) thresholds
+        // 32 C should land in the warning band, below the critical cutoff.
         val warningPayload = validPayload.replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 32.0")
 
         val response = client.post("/api/ingest") {
@@ -162,7 +161,7 @@ class ApplicationTest {
     fun `POST ingest critical low activity returns derived status critical`() = testApplication {
         application { module() }
 
-        // 0.1g is below the critical low-activity threshold of 0.3g
+        // 0.1 g is well below the low-activity threshold.
         val criticalPayload = validPayload.replace("\"accelMagG\": 1.0", "\"accelMagG\": 0.1")
 
         val response = client.post("/api/ingest") {
@@ -178,7 +177,7 @@ class ApplicationTest {
     fun `POST ingest flee event returns derived status critical`() = testApplication {
         application { module() }
 
-        // 5.0g is above the critical flee threshold of 4.0g
+        // 5.0 g should trip the flee threshold immediately.
         val fleePayload = validPayload.replace("\"accelMagG\": 1.0", "\"accelMagG\": 5.0")
 
         val response = client.post("/api/ingest") {
@@ -308,13 +307,13 @@ class ApplicationTest {
     fun `GET alerts filtered by site returns only that site`() = testApplication {
         application { module() }
 
-        // Ingest a critical reading for herd_cattle_A only
+        // Seed one alert for herd_cattle_A so the site filter has something to exclude.
         client.post("/api/ingest") {
             contentType(ContentType.Application.Json)
             setBody(validPayload.replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 38.0"))
         }
 
-        // Filter to herd_goat_B , should return empty array
+        // Filtering to a different seeded herd should return an empty list.
         val response = client.get("/api/alerts?site=herd_goat_B")
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals("[]", response.bodyAsText().trim())
@@ -337,7 +336,7 @@ class ApplicationTest {
     fun `GET alerts with no matching filter returns empty array`() = testApplication {
         application { module() }
 
-        // Clear any alerts that other tests may have written to the shared DB
+        // Clear any alerts written during this test application run before checking the empty state.
         transaction {
             AlertsLog.deleteAll()
         }
@@ -380,33 +379,17 @@ class ApplicationTest {
             setBody(validPayload)
         }
 
-        // Print what the ingest actually returned so we can see it in test output
         val ingestBody = ingestResponse.bodyAsText()
-        println("INGEST STATUS: ${ingestResponse.status}")
-        println("INGEST BODY: $ingestBody")
 
         val response = client.get("/api/readings?site=herd_cattle_A")
         val body = response.bodyAsText()
 
-        println("READINGS STATUS: ${response.status}")
-        println("READINGS BODY: $body")
-
         assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(HttpStatusCode.Created, ingestResponse.status, "Ingest should succeed before readings are fetched")
+        assertTrue(ingestBody.contains("saved"), "Expected a saved confirmation but got: $ingestBody")
         assertTrue(body.startsWith("["), "Expected JSON array but got: $body")
         assertTrue(body.contains("herd_cattle_A"), "Expected siteId in body but got: $body")
     }
-
-    /**
-    @Test
-    fun `GET readings for valid site with no data returns empty array`() = testApplication {
-        application { module() }
-
-        // herd_goat_B exists but we cleared all readings in @BeforeTest
-        val response = client.get("/api/readings?site=herd_goat_B")
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals("[]", response.bodyAsText().trim())
-    }
-    **/
 
     @Test
     fun `GET readings with invalid from date returns 400`() = testApplication {

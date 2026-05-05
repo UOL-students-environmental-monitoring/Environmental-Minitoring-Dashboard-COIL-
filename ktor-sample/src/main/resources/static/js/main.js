@@ -1,4 +1,3 @@
-// Used GPT-5 to assist with dashboard interactions - lines 1-237
 import { getDashboardData } from "./api.js";
 
 const elements = {
@@ -77,6 +76,7 @@ function mapCoordinate(value, min, max) {
 function renderMap() {
     elements.siteMap.innerHTML = "";
 
+    // Only plot sites that have at least one reading we can turn into a marker.
     const readings = dashboardState.siteReadings
         .filter((entry) => entry.site)
         .filter((entry) => selectedSiteId() === "all" || entry.site.id === selectedSiteId())
@@ -106,6 +106,7 @@ function renderMap() {
     const maxLong = Math.max(...longitudes);
 
     readings.forEach(({ site, reading }) => {
+        // Spread the live coordinates across the card so the dashboard shows relative position at a glance.
         const marker = document.createElement("div");
         marker.className = "map-marker";
         marker.classList.toggle("is-alert", reading.alertTriggered);
@@ -140,6 +141,7 @@ function renderMetrics() {
     const motionAverage = average(latestReadings.map((reading) => reading.accelMagG));
     const visibleAlerts = filterBySite(dashboardState.alerts, selectedSiteId());
 
+    // When a single herd is selected, the card is acting as a focused detail view rather than a count.
     elements.metricSites.textContent =
         selectedSiteId() === "all" ? String(dashboardState.sites.length) : "1";
     elements.metricTemp.textContent = tempAverage === null ? "--" : `${tempAverage.toFixed(1)} C`;
@@ -227,6 +229,7 @@ async function initialiseDashboard() {
     }
 }
 
+// The two filters drive different parts of the UI, so each one redraws only what it owns.
 elements.siteFilter.addEventListener("change", () => {
     renderMap();
     renderMetrics();
