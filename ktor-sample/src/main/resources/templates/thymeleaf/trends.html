@@ -5,16 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Environmental Monitor - Trends</title>
     <link rel="stylesheet" href="/static/css/trends.css" />
-    <!--
-    Chart.js must load before trends.js so new Chart() is defined when drawChart runs.
-    trends.js uses defer so it executes after the DOM is ready.
-    -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/static/js/trends.js" defer></script>
 </head>
 
 <body>
-<!-- Header: left is title, navigation links on right, top of the page -->
 <header>
     <h1>Environmental Monitor</h1>
     <nav>
@@ -31,13 +26,8 @@
 
     <div class="sector">
 
-        <!-- dropdown menus: site-toggle, parameter-toggle, time-toggle -->
         <div class="controls">
 
-            <!--
-                site / Herd toggle
-                options are filled in dynamically by JavaScript on page load
-            -->
             <div class="control-group">
                 <label for = "site-select">Site</label>
                 <select id = "site-select">
@@ -45,10 +35,6 @@
                 </select>
             </div>
 
-            <!-- Time range toggle.
-                 data-days is a custom attribute that JavaScript reads with
-                 button.dataset.days to know how many days were selected
-            -->
             <div class="control-group">
                 <label>Time</label>
                 <div class="toggle-group" id="time-toggle">
@@ -57,10 +43,6 @@
                 </div>
             </div>
 
-            <!-- Parameter toggle.
-                 data-param is read by JavaScript to decide which parameter
-                 from response from the API to plot on the Y axis
-            -->
             <div class="control-group">
                 <label>Parameter</label>
                 <div class="toggle-group" id="param-toggle">
@@ -71,16 +53,10 @@
 
         </div>
 
-        <!-- shown when data is loading from the API -->
         <div id="loading-message" style="display:none">Chart is loading...</div>
 
-        <!-- shown only if the API call fails -->
         <div id="error-message" style="display:none">Could not load data</div>
 
-        <!--
-            Chart.js draws the graph onto this <canvas> element,
-            the surrounding div lets us control height with CSS
-        -->
         <div class="chart-wrapper">
             <canvas id="trends-chart"></canvas>
         </div>

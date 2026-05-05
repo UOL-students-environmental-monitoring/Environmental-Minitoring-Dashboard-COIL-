@@ -1,28 +1,13 @@
-<!-- Alerts Page, Need to factor in how this page can serve each persona
- For Tom, needs to be;
- - Mobile Responsive (convenient for when he is out on the field, can check his smartphone)
- - Page needs to load instantly and show him card with either critical! or warning!
-
- For Priya;
- - Can have every alert show the Site ID, so she can see which herd triggered it across alls sites
-
- For Sipho;
- - Page can be designed to be readable at night
-
- For Dr. Sarah Van de Merwe;
- - A filter to switch between conditions like health indicators. A timeline of a herd's condition before arriving on site
--->
-
 <!DOCTYPE html>
-<html lang = "en">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=width-device, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alerts - Environmental Monitor</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
 
-    
+
        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
        :root {
@@ -79,7 +64,7 @@
          white-space: nowrap;
        }
        .nav-tabs { display: flex; align-items: stretch; }
-       
+
        .nav-tab {
          display: flex;
          align-items: center;
@@ -116,9 +101,9 @@
        .page-title {
          font-size: 20px;
          font-weight: 600;
-         letter-spacing: -0.01em; 
+         letter-spacing: -0.01em;
        }
-       
+
        .page-meta {
          font-family: var(--font-mono);
          font-size: 12px;
@@ -136,7 +121,7 @@
          padding-bottom: 14px;
          border-bottom: 1px solid var(--border);
        }
- 
+
        .filter-chip {
          font-family: var(--font-mono);
          font-size: 11.5px;
@@ -148,32 +133,32 @@
          cursor: pointer;
          transition: all 0.12s;
        }
- 
+
        .filter-chip:hover {
          border-color: var(--text-primary);
          color: var(--text-primary);
        }
- 
+
        .filter-chip.active {
          background: var(--text-primary);
          color: #fff;
          border-color: var(--text-primary);
        }
- 
+
        .filter-sep {
          width: 1px;
          height: 18px;
          background: var(--border);
          margin: 0 2px;
        }
- 
+
        .site-filter {
          margin-left: auto;
          display: flex;
          align-items: center;
          gap: 6px;
        }
- 
+
        .site-filter label {
          font-family: var(--font-mono);
          font-size: 11.5px;
@@ -197,7 +182,7 @@
          gap: 6px;
          margin-left: 8px;
        }
- 
+
        .source-toggle label {
          font-family: var(--font-mono);
          font-size: 11.5px;
@@ -216,8 +201,8 @@
          cursor: pointer;
        }
 
-  
-       
+
+
        .alerts-list {
          display: flex;
          flex-direction: column;
@@ -315,7 +300,7 @@
        .alert-timestamp {
          font-family: var(--font-mono);
          font-size: 11px;
-         color: var(--text-muted);     
+         color: var(--text-muted);
        }
 
        .alert-site {
@@ -391,10 +376,6 @@
 </head>
 <body>
 
-  <!-- For the navigation, the user must be able to go through each page with no problem
-   so must make mine and team mates pages linked together
-  -->
-
 <header>
   <div class="nav-inner">
     <span class="nav-brand">Environmental Monitor</span>
@@ -407,12 +388,11 @@
 </header>
 
 <div class="page">
- 
+
   <div class="page-header">
     <h1 class="page-title">Alerts</h1>
-    <span class="page-meta" id="count-label">Loading…</span>
+    <span class="page-meta" id="count-label">Loading...</span>
   </div>
-<!-- Buttons for the actual site page -->
   <div class="filter-bar">
     <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
     <button class="filter-chip"        onclick="setFilter('critical', this)">Critical</button>
@@ -425,8 +405,7 @@
     <button class="filter-chip" onclick="setFilter('heat_collapse', this)">Heat Collapse</button>
   </div>
 
-  
-  <!-- Fresh data i.e. fresh information/refresh option available here-->
+
   <div class="site-filter">
     <label for="site-select">Site:</label>
     <select id="site-select" onchange="setSite(this.value)">
@@ -439,10 +418,10 @@
     <select id="source-select" onchange="setSource(this.value)">
     <option value="both">Alerts + Readings</option>
     <option value="alerts">Alerts only</option>
-    <option value="readings">CSV readings only</option>
+    <option value="readings">Seeded readings only</option>
     </select>
   </div>
- 
+
  </div>
 
   <div class="alerts-list" id="alerts-list">
@@ -454,9 +433,8 @@
 <div id="toast"></div>
 
 <script>
-  // ── State ──
-  let alertsData   = [];   // from GET /api/alerts   → AlertDTO[]
-  let readingsData = [];   // from GET /api/readings  → ReadingDTO[] (CSV)
+  let alertsData   = [];
+  let readingsData = [];
   let sitesData    = [];
   let activeFilter = 'all';
   let activeSite   = '';
@@ -482,21 +460,19 @@
       siteSelect.appendChild(option);
     });
   }
- 
-  // ── Boot — fetch both endpoints in parallel ──
+
   async function init() {
     try {
       if (!sitesData.length) {
         await loadSites();
       }
 
-      // Build URLs — both support optional ?site= filter (Routing.kt)
       const siteParam = activeSite ? '?site=' + encodeURIComponent(activeSite) : '';
- 
+
       const readingSites = activeSite
         ? [activeSite]
         : sitesData.map(site => site.id);
- 
+
       const [alertsRes, readingResults] = await Promise.all([
         fetch('/api/alerts' + siteParam),
         Promise.all(readingSites.map(async siteId => {
@@ -504,34 +480,31 @@
           return response.ok ? response.json() : [];
         }))
       ]);
- 
+
       alertsData   = alertsRes.ok   ? await alertsRes.json()   : [];
       readingsData = readingResults.flat();
- 
+
       render();
     } catch (err) {
       document.getElementById('alerts-list').innerHTML =
         '<div class="state-msg" style="color:#c0392b;">Could not reach the server. Is it running?<br><small>Start with: ./gradlew run</small></div>';
     }
   }
- 
-  // ── Render ──
-  // Combines AlertDTO[] and ReadingDTO[] into one unified list
+
+  // Merge saved alerts and flagged readings into one list.
   function render() {
     const list = document.getElementById('alerts-list');
     list.innerHTML = '';
- 
-    // Build a unified card list depending on source toggle
+
     let cards = [];
- 
-    // Cards from AlertsLog (POST /api/ingest triggered alerts)
+
     if (activeSource === 'both' || activeSource === 'alerts') {
       alertsData.forEach(a => {
         cards.push({
           id:        'alert-' + a.id,
           rawId:     a.id,
-          severity:  a.severity.toLowerCase(),    // 'critical' or 'warning'
-          parameter: a.parameter,                  // matches AlertEngine param names
+          severity:  a.severity.toLowerCase(),
+          parameter: a.parameter,
           message:   a.message,
           timestamp: a.timeStamp,
           siteId:    a.siteId,
@@ -540,37 +513,33 @@
         });
       });
     }
- 
-    // Cards from LivestockReadings (CSV seeded by Databases.kt)
-    // Only include rows that have at least one alert flag set
+
+    // The seeded CSV rows only become alert cards when an alert flag is set.
     if (activeSource === 'both' || activeSource === 'readings') {
       readingsData.forEach(r => {
-        if (!r.alertTriggered) return; // skip normal/clean readings
- 
-        // Derive parameter and severity from the flag columns
-        // mirrors what AlertEngine.kt would have produced
+        if (!r.alertTriggered) return;
+
         let parameter = 'unknown';
-        let severity  = r.status.toLowerCase(); // 'critical' or 'warning' from CSV column
- 
+        let severity  = r.status.toLowerCase();
+
         if (r.alertFlee)        parameter = 'flee';
         else if (r.alertLowActivity) parameter = 'low_activity';
         else if (r.alertGeofence)    parameter = 'geofence';
- 
-        // Build a human-readable message from the reading data
+
         const tempMsg  = r.ambientTemperatureC > 35
-          ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + '°C — critical heat stress risk.'
+          ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + ' C - critical heat stress risk.'
           : r.ambientTemperatureC > 30
-            ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + '°C — monitor for heat stress.'
+            ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + ' C - monitor for heat stress.'
             : '';
- 
+
         const accelMsg = r.alertFlee
-          ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g — flee event detected.'
+          ? 'Accelerometer ' + r.accelMagG.toFixed(2) + ' g - flee event detected.'
           : r.alertLowActivity
-            ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g — low activity, possible illness.'
+            ? 'Accelerometer ' + r.accelMagG.toFixed(2) + ' g - low activity, possible illness.'
             : '';
- 
-        const message = [tempMsg, accelMsg].filter(Boolean).join(' ') || 'Alert flag raised — check reading.';
- 
+
+        const message = [tempMsg, accelMsg].filter(Boolean).join(' ') || 'Alert flag raised - check reading.';
+
         cards.push({
           id:        'reading-' + r.id,
           rawId:     r.id,
@@ -584,42 +553,38 @@
         });
       });
     }
- 
-    // Sort — critical first, then by timestamp descending
+
     cards.sort((a, b) => {
       if (a.severity === 'critical' && b.severity !== 'critical') return -1;
       if (b.severity === 'critical' && a.severity !== 'critical') return  1;
       return b.timestamp.localeCompare(a.timestamp);
     });
- 
-    // Apply filter chip
+
     const filtered = cards.filter(c => {
       if (activeFilter === 'all')           return true;
       if (activeFilter === 'critical')      return c.severity === 'critical';
       if (activeFilter === 'warning')       return c.severity === 'warning';
-      return c.parameter === activeFilter;  // 'temperature','low_activity','flee','heat_collapse'
+      return c.parameter === activeFilter;
     });
- 
-    // Update count label
+
     document.getElementById('count-label').textContent =
       filtered.length === cards.length
         ? cards.length + ' alerts'
         : filtered.length + ' of ' + cards.length + ' alerts';
- 
+
     if (filtered.length === 0) {
       list.innerHTML = '<div class="state-msg">No alerts match this filter.</div>';
       return;
     }
- 
-    // Render cards
-    filtered.forEach((card, i) => {
+
+    filtered.forEach((card) => {
       const el = document.createElement('div');
       el.className = 'alert-card ' + card.severity + (card.source === 'reading' ? ' from-readings' : '');
       el.dataset.uid = card.id;
- 
+
       const gpsBtn = card.isFlee
         ? `<button class="gps-btn" onclick="trackGPS('${card.id}', '${card.siteId}')">Track GPS</button>` : '';
- 
+
       el.innerHTML = `
         <div class="alert-severity">${card.severity}</div>
         <div>
@@ -637,26 +602,23 @@
           </div>
         </div>
       `;
- 
+
       list.appendChild(el);
     });
   }
- 
-  // ── Helpers ──
- 
-  // Maps AlertEngine.kt parameter names to readable display labels
+
   function formatParam(p) {
     const labels = {
-      temperature:   'Heat Stress — Temperature',
+      temperature:   'Heat Stress - Temperature',
       low_activity:  'Low Activity Alert',
       flee:          'Flee / Rustling Event',
-      heat_collapse: 'Heat Collapse — Combined Alert',
+      heat_collapse: 'Heat Collapse - Combined Alert',
       geofence:      'Geofence Breach',
       unknown:       'Alert Flagged'
     };
     return labels[p] || p;
   }
- 
+
 
   function setFilter(f, btn) {
     activeFilter = f;
@@ -664,27 +626,24 @@
     btn.classList.add('active');
     render();
   }
- 
-  // Site dropdown — re-fetches from both APIs with new ?site= param
+
   function setSite(val) {
     activeSite = val;
     init();
   }
- 
-  // Source toggle — switches between showing alerts, readings, or both
+
   function setSource(val) {
     activeSource = val;
     render();
   }
- 
-  // Dismiss a card — removes it from the UI and the local data array
+
+  // Dismiss only affects the current browser view; it does not delete server data.
   function dismiss(uid) {
     const el = document.querySelector(`[data-uid="${uid}"]`);
     if (!el) return;
     el.classList.add('removing');
     setTimeout(() => {
       el.remove();
-      // Remove from local data so filter re-renders don't bring it back
       if (uid.startsWith('alert-')) {
         const id = parseInt(uid.replace('alert-', ''));
         alertsData = alertsData.filter(a => a.id !== id);
@@ -695,7 +654,7 @@
       render();
     }, 200);
   }
- 
+
 
   function trackGPS(uid, siteId) {
     const rawId = uid.replace('alert-', '').replace('reading-', '');
@@ -703,7 +662,7 @@
     setTimeout(() => {
       window.location.href = '/static/index.html?gps=' + rawId + '&site=' + encodeURIComponent(siteId); }, 700);
   }
- 
+
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -711,72 +670,9 @@
     clearTimeout(t._timer);
     t._timer = setTimeout(() => t.classList.remove('show'), 2000);
   }
- 
-  // ── Start — runs when page is navigated to ──
+
   init();
 </script>
- 
+
 </body>
 </html>
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-

@@ -78,7 +78,7 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
             │       └── trends.js         # Chart.js trends logic
             └── templates/thymeleaf/
                 ├── index.html
-                └── trends.html           # Trends template asset; route is not currently registered
+                └── trends.html           # Trends page served at /trends
 ```
 
 ---
@@ -183,7 +183,7 @@ Current alert rules:
 - Every PR should be reviewed before merge
 - Run `bash ./gradlew test` from `ktor-sample/` before opening a PR
 - Update this README when behavior, routes, setup, or project structure changes
-- Keep comments useful and human-readable; avoid stale generated-code or authorship notes
+- Keep comments useful and plain; remove stale authorship or generated-code notes
 
 ---
 
