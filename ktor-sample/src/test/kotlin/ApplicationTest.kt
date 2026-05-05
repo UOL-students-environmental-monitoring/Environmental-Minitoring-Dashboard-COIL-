@@ -64,6 +64,23 @@ class ApplicationTest {
     }
 
     @Test
+    fun `GET dashboard and alerts shortcut routes redirect to static pages`() = testApplication {
+        application { module() }
+
+        val noRedirectClient = createClient {
+            followRedirects = false
+        }
+
+        val dashboardResponse = noRedirectClient.get("/dashboard")
+        val alertsResponse = noRedirectClient.get("/alerts")
+
+        assertEquals(HttpStatusCode.Found, dashboardResponse.status)
+        assertEquals("/static/index.html", dashboardResponse.headers[HttpHeaders.Location])
+        assertEquals(HttpStatusCode.Found, alertsResponse.status)
+        assertEquals("/static/alerts.html", alertsResponse.headers[HttpHeaders.Location])
+    }
+
+    @Test
     fun `GET dashboard page returns wireframe sections`() = testApplication {
         application { module() }
 
@@ -96,6 +113,23 @@ class ApplicationTest {
 
         assertEquals(HttpStatusCode.OK, mainResponse.status)
         assertTrue(mainResponse.bodyAsText().contains("initialiseDashboard"))
+    }
+
+    @Test
+    fun `GET frontend pages expose wired navigation and API scripts`() = testApplication {
+        application { module() }
+
+        val dashboard = client.get("/static/index.html").bodyAsText()
+        val alerts = client.get("/static/alerts.html").bodyAsText()
+        val trends = client.get("/trends").bodyAsText()
+
+        assertTrue(dashboard.contains("href=\"/trends\""))
+        assertTrue(dashboard.contains("href=\"/static/alerts.html\""))
+        assertTrue(alerts.contains("fetch('/api/sites')"))
+        assertTrue(alerts.contains("fetch('/api/readings?site='"))
+        assertTrue(alerts.contains("href=\"/trends\""))
+        assertTrue(trends.contains("src=\"/static/js/trends.js\""))
+        assertTrue(trends.contains("href=\"/static/alerts.html\""))
     }
 
     // POST /api/ingest , happy path

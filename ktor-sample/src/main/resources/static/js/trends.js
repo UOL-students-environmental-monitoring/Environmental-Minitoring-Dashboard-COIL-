@@ -26,28 +26,40 @@ let chartJsInstance = null;
 // occupies the dropdown menus and displays initial graph
 // -------------------------------------------------------
 async function loadSites(){
-    // fetch() sends an HTTP GET request and await waits for network response
-    const response = await fetch("/api/sites");
+    try {
+        // fetch() sends an HTTP GET request and await waits for network response
+        const response = await fetch("/api/sites");
+        if (!response.ok) {
+            throw new Error("Server returned status " + response.status);
+        }
 
-    // reads the body and converts JSON text into an array of Java objects
-    // e.g. [{ id: "herd_cattle_A", ... }, ...]
-    const sites = await response.json();
+        // reads the body and converts JSON text into an array of Java objects
+        // e.g. [{ id: "herd_cattle_A", ... }, ...]
+        const sites = await response.json();
 
-    const choice = document.getElementById("site-select");
-    choice.innerHTML = "";
+        const choice = document.getElementById("site-select");
+        choice.innerHTML = "";
 
-    // loop through all sites and create option element for it
-    sites.forEach(function(site) {
-        const option = document.createElement("option");
-        option.value       = site.id; // the value the API receives in the request
-        option.textContent = site.id; // the text displayed to the user
-        choice.appendChild(option);
-    });
+        // loop through all sites and create option element for it
+        sites.forEach(function(site) {
+            const option = document.createElement("option");
+            option.value       = site.id; // the value the API receives in the request
+            option.textContent = site.id; // the text displayed to the user
+            choice.appendChild(option);
+        });
 
-    // defaults to first site so graph can be displayed immediately
-    if ( sites.length > 0 ){
-        chosenSite = sites[0].id;
-        loadChartReadings(); // draw the chart
+        // defaults to first site so graph can be displayed immediately
+        if ( sites.length > 0 ){
+            chosenSite = sites[0].id;
+            loadChartReadings(); // draw the chart
+        } else {
+            document.getElementById("error-message").textContent = "No monitoring sites are registered.";
+            document.getElementById("error-message").style.display = "block";
+        }
+    } catch (error) {
+        console.error("Site list failed to load: ", error);
+        document.getElementById("error-message").textContent = "Could not load sites.";
+        document.getElementById("error-message").style.display = "block";
     }
 }
 

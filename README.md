@@ -88,7 +88,7 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
 | Person | Area |
 |--------|------|
 | **P1** | Dashboard UI & Layout (`ktor-sample/src/main/resources/static/index.html`) |
-| **P2** | Charts & Historical Trends (`templates/thymeleaf/trends.html`, `static/js/trends.js`, `static/css/trends.css`) |
+| **P2** | Charts & Historical Trends (`/trends`, `templates/thymeleaf/trends.html`, `static/js/trends.js`, `static/css/trends.css`) |
 | **P3** | Data Management & Validation (`Models.kt`, `Databases.kt`, `Routing.kt`) |
 | **P4** | Alert System (`static/alerts.html`, `AlertEngine.kt`, `/api/alerts`) |
 | **P5** | Analysis & Reporting Portal planned work; no `portal.html` exists in the current codebase |
@@ -141,6 +141,9 @@ bash ./gradlew build
 | `GET` | `/api/sites` | Returns the seeded monitoring sites/herds |
 | `GET` | `/static/*` | Serves static frontend assets from `src/main/resources/static/` |
 | `GET` | `/` | Redirects to `/static/index.html` |
+| `GET` | `/dashboard` | Redirects to `/static/index.html` |
+| `GET` | `/alerts` | Redirects to `/static/alerts.html` |
+| `GET` | `/trends` | Serves the Chart.js trends page through Thymeleaf |
 
 Payload fields used by the app: `siteId`, `timeStamp`, `latitude`, `longitude`, `accelMagG`, and `ambientTemperatureC`.
 
@@ -168,7 +171,7 @@ Current alert rules:
 - **Live dashboard** — Ktor-served dashboard with GPS-style herd map, site filter, active herd count, average temperature, average motion, and recent alerts
 - **Bundled livestock dataset** — `livestock_tracking.csv` seeds readings for `herd_cattle_A` and `herd_goat_B`
 - **Active alerts** — `/api/alerts` exposes severity-graded alert rows and `alerts.html` provides a dedicated alerts interface
-- **Historical trends assets** — Chart.js trends template and scripts exist, but the `/trends` route is not currently registered
+- **Historical trends page** — `/trends` loads Chart.js controls from `/api/sites` and `/api/readings`
 - **Server-side validation** — blank site IDs, unknown sites, invalid coordinates, negative accelerometer values, extreme temperatures, malformed JSON, and bad date filters return 4xx responses
 - **Accessibility** — dashboard includes skip-link support, semantic sections, ARIA labels, live regions, keyboard-focus styling, and responsive layout work
 
@@ -224,7 +227,7 @@ Current alert rules:
 | Risk | Mitigation |
 |------|-----------|
 | README or sprint docs drift from the actual `ktor-sample/` app | Verify setup, routes, and filenames against the code before updating docs |
-| Missing routes for planned pages such as `/trends` or `/static/portal.html` | Register routes or update navigation before presenting those pages as complete |
+| Missing routes for planned pages such as `/static/portal.html` | Register routes or update navigation before presenting those pages as complete |
 | CSV import silently skips bad rows | Check seeded row counts and malformed rows when changing `livestock_tracking.csv` or import logic |
 | Tests written only at the end | Keep route and alert-engine tests beside each feature change |
 | WCAG failures found late | Run keyboard and scanner checks on dashboard and alerts pages before submission |

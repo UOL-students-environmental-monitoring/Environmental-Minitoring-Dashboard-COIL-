@@ -29,8 +29,8 @@ export async function getAlerts() {
     return requestJson("/api/alerts");
 }
 
-export async function getReadings(siteId) {
-    const params = new URLSearchParams({ site: siteId });
+export async function getReadings(siteId, options = {}) {
+    const params = new URLSearchParams({ site: siteId, ...options });
     return requestJson(`/api/readings?${params.toString()}`);
 }
 

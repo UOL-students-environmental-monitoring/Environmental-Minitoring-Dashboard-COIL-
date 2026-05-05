@@ -21,6 +21,8 @@ let dashboardState = {
     alerts: [],
 };
 
+const initialSiteId = new URLSearchParams(window.location.search).get("site");
+
 function setStatus(label, mode = "ready") {
     elements.status.textContent = label;
     elements.status.classList.toggle("is-ready", mode === "ready");
@@ -64,6 +66,11 @@ function populateFilters() {
 
     elements.siteFilter.innerHTML = `<option value="all">All herds</option>${siteOptions}`;
     elements.alertFilter.innerHTML = `<option value="all">All herds</option>${siteOptions}`;
+
+    if (initialSiteId && dashboardState.sites.some((site) => site.id === initialSiteId)) {
+        elements.siteFilter.value = initialSiteId;
+        elements.alertFilter.value = initialSiteId;
+    }
 }
 
 function mapCoordinate(value, min, max) {

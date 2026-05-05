@@ -27,6 +27,9 @@ fun Application.configureTemplating() {
         get("/html-thymeleaf") {
             call.respond(ThymeleafContent("index", mapOf("user" to ThymeleafUser(1, "user1"))))
         }
+        get("/trends") {
+            call.respond(ThymeleafContent("trends", emptyMap<String, Any>()))
+        }
     }
 }
 data class ThymeleafUser(val id: Int, val name: String)

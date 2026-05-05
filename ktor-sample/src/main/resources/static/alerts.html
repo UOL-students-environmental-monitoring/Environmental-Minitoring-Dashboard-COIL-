@@ -399,10 +399,9 @@
   <div class="nav-inner">
     <span class="nav-brand">Environmental Monitor</span>
     <nav class="nav-tabs">
-      <a href="/static/dashboard.html" class="nav-tab">Dashboard</a>
-      <a href="/static/trends.html" class="nav-tab">Trends</a>
+      <a href="/static/index.html" class="nav-tab">Dashboard</a>
+      <a href="/trends" class="nav-tab">Trends</a>
       <a href="/static/alerts.html" class="nav-tab active">Alerts</a>
-      <a href="/static/portal.html" class="nav-tab">Portal</a>
     </nav>
   </div>
 </header>
@@ -421,7 +420,7 @@
     <div class="filter-sep"></div>
 
     <button class="filter-chip" onclick="setFilter('temperature', this)">Heat Stress</button>
-    <button class="filter-chip" onclick="setFilter('low activity', this)">Low activity</button>
+    <button class="filter-chip" onclick="setFilter('low_activity', this)">Low activity</button>
     <button class="filter-chip" onclick="setFilter('flee', this)">Flee Events</button>
     <button class="filter-chip" onclick="setFilter('heat_collapse', this)">Heat Collapse</button>
   </div>
@@ -431,9 +430,7 @@
   <div class="site-filter">
     <label for="site-select">Site:</label>
     <select id="site-select" onchange="setSite(this.value)">
-      <option value="">All sites</option>
-      <option value="herd_cattle_A">Cattle Herd A</option>
-      <option value="herd_goat_B">Goat Herd B</option>
+      <option value="">Loading sites...</option>
     </select>
   </div>
 
@@ -460,27 +457,56 @@
   // ── State ──
   let alertsData   = [];   // from GET /api/alerts   → AlertDTO[]
   let readingsData = [];   // from GET /api/readings  → ReadingDTO[] (CSV)
+  let sitesData    = [];
   let activeFilter = 'all';
   let activeSite   = '';
   let activeSource = 'both';
+
+  function formatSiteName(siteId) {
+    return siteId
+      .replace(/^herd_/, '')
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+
+  async function loadSites() {
+    const siteSelect = document.getElementById('site-select');
+    const response = await fetch('/api/sites');
+    sitesData = response.ok ? await response.json() : [];
+
+    siteSelect.innerHTML = '<option value="">All sites</option>';
+    sitesData.forEach(site => {
+      const option = document.createElement('option');
+      option.value = site.id;
+      option.textContent = formatSiteName(site.id);
+      siteSelect.appendChild(option);
+    });
+  }
  
   // ── Boot — fetch both endpoints in parallel ──
   async function init() {
     try {
+      if (!sitesData.length) {
+        await loadSites();
+      }
+
       // Build URLs — both support optional ?site= filter (Routing.kt)
       const siteParam = activeSite ? '?site=' + encodeURIComponent(activeSite) : '';
  
-      // Fetch GET /api/alerts and GET /api/readings simultaneously
-      // /api/readings requires site param — default to herd_cattle_A if none selected
-      const readingsSite = activeSite || 'herd_cattle_A';
+      const readingSites = activeSite
+        ? [activeSite]
+        : sitesData.map(site => site.id);
  
-      const [alertsRes, readingsRes] = await Promise.all([
+      const [alertsRes, readingResults] = await Promise.all([
         fetch('/api/alerts' + siteParam),
-        fetch('/api/readings?site=' + encodeURIComponent(readingsSite))
+        Promise.all(readingSites.map(async siteId => {
+          const response = await fetch('/api/readings?site=' + encodeURIComponent(siteId));
+          return response.ok ? response.json() : [];
+        }))
       ]);
  
       alertsData   = alertsRes.ok   ? await alertsRes.json()   : [];
-      readingsData = readingsRes.ok ? await readingsRes.json() : [];
+      readingsData = readingResults.flat();
  
       render();
     } catch (err) {
@@ -673,9 +699,9 @@
 
   function trackGPS(uid, siteId) {
     const rawId = uid.replace('alert-', '').replace('reading-', '');
-    showToast('Opening GPS tracker…');
+    showToast('Opening dashboard map...');
     setTimeout(() => {
-      window.location.href = '/static/portal.html?gps=' + rawId + '&site=' + encodeURIComponent(siteId); }, 700);
+      window.location.href = '/static/index.html?gps=' + rawId + '&site=' + encodeURIComponent(siteId); }, 700);
   }
  
   function showToast(msg) {
@@ -752,6 +778,5 @@
 
 
  
-
 
 

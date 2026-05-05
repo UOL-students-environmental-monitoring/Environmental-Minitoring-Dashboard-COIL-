@@ -21,6 +21,14 @@ fun Application.configureRouting() {
             call.respondRedirect("/static/index.html")
         }
 
+        get("/dashboard") {
+            call.respondRedirect("/static/index.html")
+        }
+
+        get("/alerts") {
+            call.respondRedirect("/static/alerts.html")
+        }
+
         // -------------------------------------------------------------------
         // POST /api/ingest
         // looks out for a JSON structure for LivestockPayload and accepts it
