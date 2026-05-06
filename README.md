@@ -1,6 +1,6 @@
 # Environmental Monitoring Dashboard — COMP2850 COIL Project
 
-A full-stack environmental monitoring system for **livestock farm management**, built with **Kotlin (Ktor)** and **HTML/CSS/JavaScript** served directly by Ktor. The current application ingests livestock sensor readings, seeds an H2 database from the bundled `livestock_tracking.csv` dataset, evaluates welfare alerts, and serves dashboard pages for farm monitoring.
+A full-stack environmental monitoring system for **livestock farm management**, built with **Kotlin (Ktor)** and **HTML/CSS/JavaScript** served directly by Ktor. The current application ingests livestock sensor readings, seeds an H2 database from the bundled `livestock_tracking.csv` dataset, evaluates welfare alerts for live ingests, and serves dashboard pages for farm monitoring.
 
 ---
 
@@ -8,7 +8,7 @@ A full-stack environmental monitoring system for **livestock farm management**, 
 
 Developed as part of the **COMP2850 COIL (Collaborative Online International Learning)** programme.
 
-The current dataset and implementation focus on livestock welfare signals: herd GPS position, accelerometer movement, ambient temperature, derived status, and alert flags. The app currently supports two seeded monitoring sites: `herd_cattle_A` and `herd_goat_B`, with readings loaded from `ktor-sample/src/main/resources/livestock_tracking.csv`.
+The current dataset and implementation focus on livestock welfare signals: herd GPS position, accelerometer movement, ambient temperature, derived status, and alert flags. The app currently supports two seeded monitoring sites: `herd_cattle_A` and `herd_goat_B`, displayed in the dashboard as **East Pasture Zone** and **North Hillside Zone**, with readings loaded from `ktor-sample/src/main/resources/livestock_tracking.csv`.
 
 ### Personas
 
@@ -168,9 +168,9 @@ Current alert rules:
 
 ## Key Features
 
-- **Live dashboard** — Ktor-served dashboard with GPS-style herd map, site filter, active herd count, average temperature, average motion, and recent alerts
+- **Live dashboard** — Ktor-served dashboard with GPS-style site map, site filter, active site count, average temperature, average motion, and recent critical alerts linked to the alerts page
 - **Bundled livestock dataset** — `livestock_tracking.csv` seeds readings for `herd_cattle_A` and `herd_goat_B`
-- **Active alerts** — `/api/alerts` exposes severity-graded alert rows and `alerts.html` provides a dedicated alerts interface
+- **Active alerts** — `/api/alerts` exposes severity-graded alert rows created by ingested readings, and `alerts.html` provides a dedicated alerts interface
 - **Historical trends page** — `/trends` loads Chart.js controls from `/api/sites` and `/api/readings`
 - **Server-side validation** — blank site IDs, unknown sites, invalid coordinates, negative accelerometer values, extreme temperatures, malformed JSON, and bad date filters return 4xx responses
 - **Accessibility** — dashboard includes skip-link support, semantic sections, ARIA labels, live regions, keyboard-focus styling, and responsive layout work

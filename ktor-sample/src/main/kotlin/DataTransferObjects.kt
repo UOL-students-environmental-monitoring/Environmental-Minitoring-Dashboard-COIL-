@@ -27,6 +27,17 @@ data class AlertDTO(
 )
 
 @Serializable
+data class DashboardAlertDTO(
+    val id: Int,
+    val siteId: String,
+    val parameter: String,
+    val severity: String,
+    val message: String,
+    val timeStamp: String,
+    val source: String
+)
+
+@Serializable
 data class ReadingDTO(
     val id: Int,
     val siteId: String,

@@ -25,8 +25,10 @@ export async function getSites() {
     return requestJson("/api/sites");
 }
 
-export async function getAlerts() {
-    return requestJson("/api/alerts");
+export async function getAlerts(options = {}) {
+    const params = new URLSearchParams(options);
+    const suffix = params.size ? `?${params.toString()}` : "";
+    return requestJson(`/api/alerts${suffix}`);
 }
 
 export async function getReadings(siteId, options = {}) {
@@ -34,13 +36,21 @@ export async function getReadings(siteId, options = {}) {
     return requestJson(`/api/readings?${params.toString()}`);
 }
 
+export async function getDashboardCriticalAlerts() {
+    return requestJson("/api/dashboard/critical-alerts");
+}
+
 export async function getDashboardData() {
     const sites = await getSites();
-    // if one herd fails we still want the rest of the dashboard to load
+    const recentWindow = {
+        from: "2023-12-24T00:00:00",
+        to: "2023-12-31T23:00:00",
+    };
+    // If one site has a bad row, the rest of the dashboard should still load.
     const readingResults = await Promise.allSettled(
         sites.map(async (site) => ({
             site,
-            readings: await getReadings(site.id),
+            readings: await getReadings(site.id, recentWindow),
         })),
     );
 
@@ -58,6 +68,6 @@ export async function getDashboardData() {
     return {
         sites,
         siteReadings,
-        alerts: await getAlerts(),
+        alerts: await getDashboardCriticalAlerts(),
     };
 }

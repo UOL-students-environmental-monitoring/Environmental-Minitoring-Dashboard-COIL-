@@ -159,6 +159,41 @@ fun Application.configureRouting() {
             call.respond(alerts)
         }
 
+        get("/api/dashboard/critical-alerts") {
+            val siteFilter = call.request.queryParameters["site"]
+
+            // The dashboard needs a tiny feed, not the whole readings table in the browser.
+            val alerts = transaction {
+                var query = LivestockReadings
+                    .selectAll()
+                    .where {
+                        (LivestockReadings.status eq "critical") and
+                            (LivestockReadings.alertTriggered eq 1)
+                    }
+
+                if ( siteFilter != null ) {
+                    query = query.andWhere { LivestockReadings.siteId eq siteFilter }
+                }
+
+                query
+                    .orderBy(LivestockReadings.timeStamp to SortOrder.DESC)
+                    .limit(10)
+                    .map { row ->
+                        DashboardAlertDTO(
+                            id = row[LivestockReadings.id],
+                            siteId = row[LivestockReadings.siteId],
+                            parameter = dashboardAlertParameter(row),
+                            severity = row[LivestockReadings.status],
+                            message = dashboardAlertMessage(row),
+                            timeStamp = row[LivestockReadings.timeStamp].toString(),
+                            source = "readings"
+                        )
+                    }
+            }
+
+            call.respond(alerts)
+        }
+
         // ----------------------------------------------
         // GET /api/readings
         // returns readings for a given site, optionally.
@@ -245,5 +280,26 @@ fun Application.configureRouting() {
             }
             call.respond(sites)
         }
+    }
+}
+
+private fun dashboardAlertParameter(row: ResultRow): String {
+    return when {
+        row[LivestockReadings.alertFlee] == 1 -> "flee"
+        row[LivestockReadings.alertLowActivity] == 1 -> "low_activity"
+        row[LivestockReadings.alertGeofence] == 1 -> "geofence"
+        row[LivestockReadings.ambientTemperatureC] > 35.0 -> "temperature"
+        else -> "critical"
+    }
+}
+
+private fun dashboardAlertMessage(row: ResultRow): String {
+    val parameter = dashboardAlertParameter(row)
+    return when (parameter) {
+        "flee" -> "Accelerometer ${row[LivestockReadings.accelMagG]} g - flee event detected."
+        "low_activity" -> "Accelerometer ${row[LivestockReadings.accelMagG]} g - low activity, check the animal."
+        "geofence" -> "Geofence breach detected - check location."
+        "temperature" -> "Temperature ${row[LivestockReadings.ambientTemperatureC]} C - critical heat stress risk."
+        else -> "Critical alert flag raised - check reading."
     }
 }

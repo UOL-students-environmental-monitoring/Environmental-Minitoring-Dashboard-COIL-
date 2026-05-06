@@ -394,15 +394,15 @@
     <span class="page-meta" id="count-label">Loading...</span>
   </div>
   <div class="filter-bar">
-    <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-    <button class="filter-chip"        onclick="setFilter('critical', this)">Critical</button>
-    <button class="filter-chip"        onclick="setFilter('warning', this)">Warning</button>
+    <button class="filter-chip active" data-filter="all" onclick="setFilter('all', this)">All</button>
+    <button class="filter-chip" data-filter="critical" onclick="setFilter('critical', this)">Critical</button>
+    <button class="filter-chip" data-filter="warning" onclick="setFilter('warning', this)">Warning</button>
     <div class="filter-sep"></div>
 
-    <button class="filter-chip" onclick="setFilter('temperature', this)">Heat Stress</button>
-    <button class="filter-chip" onclick="setFilter('low_activity', this)">Low activity</button>
-    <button class="filter-chip" onclick="setFilter('flee', this)">Flee Events</button>
-    <button class="filter-chip" onclick="setFilter('heat_collapse', this)">Heat Collapse</button>
+    <button class="filter-chip" data-filter="temperature" onclick="setFilter('temperature', this)">Heat Stress</button>
+    <button class="filter-chip" data-filter="low_activity" onclick="setFilter('low_activity', this)">Low activity</button>
+    <button class="filter-chip" data-filter="flee" onclick="setFilter('flee', this)">Flee Events</button>
+    <button class="filter-chip" data-filter="heat_collapse" onclick="setFilter('heat_collapse', this)">Heat Collapse</button>
   </div>
 
 
@@ -439,12 +439,30 @@
   let activeFilter = 'all';
   let activeSite   = '';
   let activeSource = 'both';
+  const initialParams = new URLSearchParams(window.location.search);
 
   function formatSiteName(siteId) {
     return siteId
       .replace(/^herd_/, '')
       .replaceAll('_', ' ')
       .replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+
+  function siteLabel(siteId) {
+    const site = sitesData.find(entry => entry.id === siteId);
+    return site && site.description ? site.description : formatSiteName(siteId);
+  }
+
+  function applyInitialParams() {
+    const filter = initialParams.get('filter') || initialParams.get('severity');
+    const site = initialParams.get('site');
+    const source = initialParams.get('source');
+
+    if (filter) activeFilter = filter;
+    if (site) activeSite = site;
+    if (source === 'alerts' || source === 'readings' || source === 'both') {
+      activeSource = source;
+    }
   }
 
   async function loadSites() {
@@ -456,8 +474,14 @@
     sitesData.forEach(site => {
       const option = document.createElement('option');
       option.value = site.id;
-      option.textContent = formatSiteName(site.id);
+      option.textContent = siteLabel(site.id);
       siteSelect.appendChild(option);
+    });
+
+    siteSelect.value = activeSite;
+    document.getElementById('source-select').value = activeSource;
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.filter === activeFilter);
     });
   }
 
@@ -514,7 +538,7 @@
       });
     }
 
-    // The seeded CSV rows only become alert cards when an alert flag is set.
+    // CSV readings only show up here when the row is actually flagged.
     if (activeSource === 'both' || activeSource === 'readings') {
       readingsData.forEach(r => {
         if (!r.alertTriggered) return;
@@ -596,7 +620,7 @@
           <p class="alert-message">${card.message}</p>
           <div class="alert-footer">
             <span class="alert-timestamp">${card.timestamp}</span>
-            <span class="alert-site">${card.siteId}</span>
+            <span class="alert-site">${siteLabel(card.siteId)}</span>
             ${gpsBtn}
             <button class="dismiss-btn" onclick="dismiss('${card.id}')">Dismiss</button>
           </div>
@@ -611,7 +635,7 @@
     const labels = {
       temperature:   'Heat Stress - Temperature',
       low_activity:  'Low Activity Alert',
-      flee:          'Flee / Rustling Event',
+      flee:          'Flee / Rustling detected',
       heat_collapse: 'Heat Collapse - Combined Alert',
       geofence:      'Geofence Breach',
       unknown:       'Alert Flagged'
@@ -671,6 +695,7 @@
     t._timer = setTimeout(() => t.classList.remove('show'), 2000);
   }
 
+  applyInitialParams();
   init();
 </script>
 

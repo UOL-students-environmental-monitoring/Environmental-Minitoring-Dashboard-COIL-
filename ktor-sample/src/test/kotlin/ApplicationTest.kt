@@ -89,7 +89,8 @@ class ApplicationTest {
         assertTrue(body.contains("Farm status map"))
         assertTrue(body.contains("GPS map"))
         assertTrue(body.contains("Current metrics"))
-        assertTrue(body.contains("Cattle alerts"))
+        assertTrue(body.contains("Recent critical alerts"))
+        assertTrue(body.contains("Active sites"))
         assertTrue(body.contains("Announcements"))
         assertTrue(body.contains("Links to return"))
     }
@@ -107,9 +108,16 @@ class ApplicationTest {
 
         assertEquals(HttpStatusCode.OK, apiResponse.status)
         assertTrue(apiResponse.bodyAsText().contains("getDashboardData"))
+        assertTrue(apiResponse.bodyAsText().contains("/api/dashboard/critical-alerts"))
 
         assertEquals(HttpStatusCode.OK, mainResponse.status)
         assertTrue(mainResponse.bodyAsText().contains("initialiseDashboard"))
+        assertTrue(mainResponse.bodyAsText().contains("siteLabel"))
+        assertTrue(mainResponse.bodyAsText().contains("alertPageUrl"))
+        assertTrue(mainResponse.bodyAsText().contains("Flee / Rustling detected"))
+        assertTrue(client.get("/static/index.html").bodyAsText().contains("data-alert-title"))
+        assertTrue(client.get("/static/index.html").bodyAsText().contains("data-alert-detail"))
+        assertTrue(client.get("/static/index.html").bodyAsText().contains("data-alert-link"))
     }
 
     @Test
@@ -124,6 +132,9 @@ class ApplicationTest {
         assertTrue(dashboard.contains("href=\"/static/alerts.html\""))
         assertTrue(alerts.contains("fetch('/api/sites')"))
         assertTrue(alerts.contains("fetch('/api/readings?site='"))
+        assertTrue(alerts.contains("new URLSearchParams(window.location.search)"))
+        assertTrue(alerts.contains("data-filter=\"critical\""))
+        assertTrue(alerts.contains("Flee / Rustling detected"))
         assertTrue(alerts.contains("href=\"/trends\""))
         assertTrue(trends.contains("src=\"/static/js/trends.js\""))
         assertTrue(trends.contains("href=\"/static/alerts.html\""))
@@ -364,6 +375,41 @@ class ApplicationTest {
     }
 
     @Test
+    fun `GET alerts filtered by severity critical returns newest critical alerts first`() = testApplication {
+        application { module() }
+
+        client.post("/api/ingest") {
+            contentType(ContentType.Application.Json)
+            setBody(validPayload.replace("\"timeStamp\": \"2025-05-01T08:00:00\"", "\"timeStamp\": \"2025-05-01T08:00:00\"")
+                .replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 38.0"))
+        }
+
+        client.post("/api/ingest") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                validPayload
+                    .replace("\"timeStamp\": \"2025-05-01T08:00:00\"", "\"timeStamp\": \"2025-05-01T09:00:00\"")
+                    .replace("\"accelMagG\": 1.0", "\"accelMagG\": 5.0"),
+            )
+        }
+
+        client.post("/api/ingest") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                validPayload
+                    .replace("\"timeStamp\": \"2025-05-01T08:00:00\"", "\"timeStamp\": \"2025-05-01T10:00:00\"")
+                    .replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 32.0"),
+            )
+        }
+
+        val body = client.get("/api/alerts?severity=critical").bodyAsText()
+
+        assertTrue(body.contains("critical"))
+        assertTrue(!body.contains("\"severity\":\"warning\""))
+        assertTrue(body.indexOf("2025-05-01T09:00") < body.indexOf("2025-05-01T08:00"))
+    }
+
+    @Test
     fun `GET alerts with no matching filter returns empty array`() = testApplication {
         application { module() }
 
@@ -443,6 +489,34 @@ class ApplicationTest {
         val body = response.bodyAsText()
         assertTrue(body.contains("herd_cattle_A"))
         assertTrue(body.contains("herd_goat_B"))
+        assertTrue(body.contains("East Pasture Zone"))
+        assertTrue(body.contains("North Hillside Zone"))
+    }
+
+    @Test
+    fun `GET alerts starts empty until ingest creates alert rows`() = testApplication {
+        application { module() }
+
+        transaction {
+            AlertsLog.deleteAll()
+        }
+
+        val response = client.get("/api/alerts?severity=critical")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals("[]", response.bodyAsText().trim())
+    }
+
+    @Test
+    fun `GET dashboard critical alerts returns recent critical flagged readings`() = testApplication {
+        application { module() }
+
+        val response = client.get("/api/dashboard/critical-alerts")
+        val body = response.bodyAsText()
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(body.contains("\"severity\":\"critical\""), "Expected seeded critical readings in dashboard feed: $body")
+        assertTrue(body.contains("\"source\":\"readings\""))
     }
 
     // AlertEngine unit tests

@@ -36,6 +36,15 @@ function formatSiteName(siteId) {
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function siteLabel(siteOrId) {
+    if (typeof siteOrId === "object" && siteOrId !== null) {
+        return siteOrId.description || formatSiteName(siteOrId.id);
+    }
+
+    const site = dashboardState.sites.find((entry) => entry.id === siteOrId);
+    return site?.description || formatSiteName(siteOrId);
+}
+
 function latestReading(siteReadings) {
     if (!siteReadings.readings.length) {
         return null;
@@ -59,13 +68,41 @@ function filterBySite(items, siteId) {
     return items.filter((item) => item.siteId === siteId);
 }
 
+function alertTitle(parameter) {
+    const labels = {
+        temperature: "Heat Stress - Temperature",
+        low_activity: "Low Activity Alert",
+        flee: "Flee / Rustling detected",
+        heat_collapse: "Heat Collapse - Combined Alert",
+        geofence: "Geofence Breach",
+        critical: "Critical Alert",
+    };
+    return labels[parameter] || parameter;
+}
+
+function dashboardCriticalAlerts() {
+    return dashboardState.alerts
+        .sort((a, b) => b.timeStamp.localeCompare(a.timeStamp));
+}
+
+function alertPageUrl(alert) {
+    const params = new URLSearchParams({
+        filter: alert.parameter || "critical",
+        severity: "critical",
+        site: alert.siteId,
+        source: alert.source || "readings",
+    });
+
+    return `/static/alerts.html?${params.toString()}`;
+}
+
 function populateFilters() {
     const siteOptions = dashboardState.sites
-        .map((site) => `<option value="${site.id}">${formatSiteName(site.id)}</option>`)
+        .map((site) => `<option value="${site.id}">${siteLabel(site)}</option>`)
         .join("");
 
-    elements.siteFilter.innerHTML = `<option value="all">All herds</option>${siteOptions}`;
-    elements.alertFilter.innerHTML = `<option value="all">All herds</option>${siteOptions}`;
+    elements.siteFilter.innerHTML = `<option value="all">All sites</option>${siteOptions}`;
+    elements.alertFilter.innerHTML = `<option value="all">All sites</option>${siteOptions}`;
 
     if (initialSiteId && dashboardState.sites.some((site) => site.id === initialSiteId)) {
         elements.siteFilter.value = initialSiteId;
@@ -83,7 +120,7 @@ function mapCoordinate(value, min, max) {
 function renderMap() {
     elements.siteMap.innerHTML = "";
 
-    // Plot only sites with a real latest reading.
+    // Only draw markers where we actually have a latest reading.
     const readings = dashboardState.siteReadings
         .filter((entry) => entry.site)
         .filter((entry) => selectedSiteId() === "all" || entry.site.id === selectedSiteId())
@@ -99,11 +136,11 @@ function renderMap() {
     }
 
     if (!readings.length) {
-        elements.mapState.textContent = "No readings available for the selected herd.";
+        elements.mapState.textContent = "No readings available for the selected site.";
         return;
     }
 
-    elements.mapState.textContent = `${readings.length} herd position${readings.length === 1 ? "" : "s"} shown`;
+    elements.mapState.textContent = `${readings.length} site position${readings.length === 1 ? "" : "s"} shown`;
 
     const latitudes = readings.map((entry) => entry.reading.latitude);
     const longitudes = readings.map((entry) => entry.reading.longitude);
@@ -113,7 +150,7 @@ function renderMap() {
     const maxLong = Math.max(...longitudes);
 
     readings.forEach(({ site, reading }) => {
-        // The card shows relative position, not an exact map projection.
+        // This is a quick relative farm map, not a full GPS projection.
         const marker = document.createElement("div");
         marker.className = "map-marker";
         marker.classList.toggle("is-alert", reading.alertTriggered);
@@ -121,11 +158,11 @@ function renderMap() {
         marker.style.top = `${100 - mapCoordinate(reading.latitude, minLat, maxLat)}%`;
         marker.setAttribute(
             "aria-label",
-            `${formatSiteName(site.id)} at latitude ${reading.latitude}, longitude ${reading.longitude}`,
+            `${siteLabel(site)} at latitude ${reading.latitude}, longitude ${reading.longitude}`,
         );
 
         const label = document.createElement("span");
-        label.textContent = formatSiteName(site.id);
+        label.textContent = siteLabel(site);
         marker.append(label);
         elements.siteMap.append(marker);
     });
@@ -146,9 +183,9 @@ function renderMetrics() {
 
     const tempAverage = average(latestReadings.map((reading) => reading.ambientTemperatureC));
     const motionAverage = average(latestReadings.map((reading) => reading.accelMagG));
-    const visibleAlerts = filterBySite(dashboardState.alerts, selectedSiteId());
+    const visibleAlerts = filterBySite(dashboardCriticalAlerts(), selectedSiteId());
 
-    // In single-herd mode the count card becomes a focused detail marker.
+    // When one site is selected, this card is just showing that selected site.
     elements.metricSites.textContent =
         selectedSiteId() === "all" ? String(dashboardState.sites.length) : "1";
     elements.metricTemp.textContent = tempAverage === null ? "--" : `${tempAverage.toFixed(1)} C`;
@@ -176,25 +213,29 @@ function formatDate(value) {
 function renderAlerts() {
     elements.alertsList.innerHTML = "";
 
-    const alerts = filterBySite(dashboardState.alerts, selectedAlertSiteId()).slice(0, 5);
+    const allCriticalAlerts = dashboardCriticalAlerts();
+    const alerts = filterBySite(allCriticalAlerts, selectedAlertSiteId()).slice(0, 5);
 
-    if (!dashboardState.alerts.length) {
-        elements.alertsState.textContent = "No alerts have been logged.";
+    if (!allCriticalAlerts.length) {
+        elements.alertsState.textContent = "No critical alerts have been logged.";
         return;
     }
 
     if (!alerts.length) {
-        elements.alertsState.textContent = "No alerts match this herd.";
+        elements.alertsState.textContent = "No critical alerts match this herd.";
         return;
     }
 
-    elements.alertsState.textContent = `${alerts.length} recent alert${alerts.length === 1 ? "" : "s"}`;
+    elements.alertsState.textContent = `${alerts.length} recent critical alert${alerts.length === 1 ? "" : "s"}`;
 
     alerts.forEach((alert) => {
         const item = elements.alertTemplate.content.firstElementChild.cloneNode(true);
-        item.querySelector("[data-alert-message]").textContent = alert.message;
+        const link = item.querySelector("[data-alert-link]");
+        link.href = alertPageUrl(alert);
+        link.querySelector("[data-alert-title]").textContent = alertTitle(alert.parameter);
+        link.querySelector("[data-alert-detail]").textContent = alert.message;
         item.querySelector("[data-alert-meta]").textContent =
-            `${formatSiteName(alert.siteId)} - ${alert.parameter} - ${formatDate(alert.timeStamp)}`;
+            `${siteLabel(alert.siteId)} - ${formatDate(alert.timeStamp)}`;
 
         const severity = item.querySelector("[data-alert-severity]");
         severity.textContent = alert.severity;
@@ -218,7 +259,7 @@ function showError(error) {
     setStatus("Error", "error");
     elements.mapState.textContent = error.message;
     elements.mapState.classList.add("is-error");
-    elements.alertsState.textContent = "Unable to load alerts.";
+    elements.alertsState.textContent = "Unable to load critical alerts.";
     elements.alertsState.classList.add("is-error");
     elements.metricSites.textContent = "--";
     elements.metricTemp.textContent = "--";
@@ -236,7 +277,7 @@ async function initialiseDashboard() {
     }
 }
 
-// Each filter redraws only the panel it controls.
+// Keep each filter small: map metrics redraw together, alert filter just redraws alerts.
 elements.siteFilter.addEventListener("change", () => {
     renderMap();
     renderMetrics();

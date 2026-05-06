@@ -33,12 +33,12 @@
                 </div>
 
                 <div class="dashboard-grid">
-                    <!-- These panels are rendered from the same API snapshot so the page stays consistent. -->
+                    <!-- Keep the dashboard panels on the same loaded data so the numbers do not drift. -->
                     <section class="map-card" aria-labelledby="map-title">
                         <div class="section-heading">
                             <h3 id="map-title">GPS map</h3>
-                            <select id="site-filter" aria-label="Choose herd">
-                                <option value="all">All herds</option>
+                            <select id="site-filter" aria-label="Choose site">
+                                <option value="all">All sites</option>
                             </select>
                         </div>
                         <div id="map-state" class="state-message" role="status">Loading site positions...</div>
@@ -47,7 +47,7 @@
 
                     <section id="metric-cards" class="metrics-grid" aria-label="Current metrics">
                         <article class="metric-card">
-                            <span>Active herds</span>
+                            <span>Active sites</span>
                             <strong id="metric-sites">--</strong>
                         </article>
                         <article class="metric-card">
@@ -59,19 +59,19 @@
                             <strong id="metric-motion">--</strong>
                         </article>
                         <article class="metric-card metric-alert">
-                            <span>Open alerts</span>
+                            <span>Critical alerts</span>
                             <strong id="metric-alerts">--</strong>
                         </article>
                     </section>
 
                     <section id="alerts-panel" class="alerts-panel" aria-labelledby="alerts-title">
                         <div class="section-heading">
-                            <h3 id="alerts-title">Cattle alerts</h3>
-                            <select id="alert-filter" aria-label="Filter alerts by herd">
-                                <option value="all">All herds</option>
+                            <h3 id="alerts-title">Recent critical alerts</h3>
+                            <select id="alert-filter" aria-label="Filter alerts by site">
+                                <option value="all">All sites</option>
                             </select>
                         </div>
-                        <div id="alerts-state" class="state-message" role="status">Loading alerts...</div>
+                        <div id="alerts-state" class="state-message" role="status">Loading critical alerts...</div>
                         <ul id="alerts-list" class="alerts-list" aria-live="polite"></ul>
                     </section>
                 </div>
@@ -103,13 +103,14 @@
             </aside>
         </main>
 
-        <!-- The alert list clones this markup for each item returned by the API. -->
+        <!-- JS fills this in with the latest critical alerts from the alerts page data. -->
         <template id="alert-template">
             <li class="alert-item">
-                <div>
-                    <strong data-alert-message></strong>
+                <a data-alert-link href="/static/alerts.html">
+                    <strong data-alert-title></strong>
+                    <span data-alert-detail></span>
                     <span data-alert-meta></span>
-                </div>
+                </a>
                 <span data-alert-severity class="severity-badge"></span>
             </li>
         </template>

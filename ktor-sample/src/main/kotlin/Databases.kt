@@ -18,7 +18,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// boiler plate
+private const val EAST_PASTURE_ID = "herd_cattle_A"
+private const val NORTH_HILLSIDE_ID = "herd_goat_B"
+
 fun Application.configureDatabases() {
     val embedded = environment.config.propertyOrNull("postgres.embedded")?.getString()?.toBoolean() ?: true
     connectToPostgres(embedded)
@@ -35,40 +37,30 @@ fun Application.configureDatabases() {
         // create the tables if they are non-existent
         SchemaUtils.create(Sites, LivestockReadings, AlertsLog)
 
-        // pre-fill the database with the known monitoring sites/herds
+        // pre-fill the database with the known monitoring sites
         // these match the site_id values found in livestock_tracking.csv
         if (Sites.selectAll().empty()) {
-            Sites.insert { it[id] = "herd_cattle_A"; it[description] = "Cattle herd in the eastern grazing pasture" }
-            Sites.insert { it[id] = "herd_goat_B"; it[description] = "Goat herd in the northern hillside enclosure" }
+            Sites.insert { it[id] = EAST_PASTURE_ID; it[description] = "East Pasture Zone" }
+            Sites.insert { it[id] = NORTH_HILLSIDE_ID; it[description] = "North Hillside Zone" }
 
-            // seed sensor readings from bundled CSV on first run
-            if (LivestockReadings.selectAll().empty()) {
-                seedTableFromCsv()
-            }
+            // CSV gives us the demo readings. Saved alert rows only come from real ingests.
+            seedTableFromCsv()
         }
     }
 }
 
-// reads the CSV file that's bundled inside our project's resources folder
-// and inserts each row into the LivestockReadings database table.
-    private fun seedTableFromCsv() {
-    // a formatter tells Kotlin how to read a date/time string.
+// Pulls in the bundled CSV so the app has readings when it first starts.
+private fun seedTableFromCsv() {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val stream = object {}.javaClass.getResourceAsStream("/livestock_tracking.csv") ?: return
-    // bufferedReader() wraps the file stream so we can read it line by line efficiently.
+
     stream.bufferedReader().useLines { lines ->
         transaction {
-            // .drop(1) skips the first line, being the csv header row
             lines.drop(1).forEach { line ->
-                // split by commas
                 val p = line.split(",")
-                // a valid row must have at least 11 columns
-                // if not valid then return@forEach skips that iteration
                 if (p.size < 11) return@forEach
-                // encapsulated in a try catch so a invalid row doesn't crash whole process
+
                 try {
-                    // inserting values from row into tables
-                    // parse converts the string and trim removes whitespace
                     LivestockReadings.insert {
                         it[timeStamp] = LocalDateTime.parse(p[0].trim(), formatter)
                         it[siteId] = p[1].trim()
@@ -83,6 +75,7 @@ fun Application.configureDatabases() {
                         it[alertFlee] = p[10].trim().toInt()
                     }
                 } catch (e: Exception) {
+                    // Skip malformed seed rows so one bad CSV line does not block startup.
                 }
             }
         }
