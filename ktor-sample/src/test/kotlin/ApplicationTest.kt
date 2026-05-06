@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 class ApplicationTest {
 
-    /** A valid baseline reading that should be accepted without raising alerts. */
+    /** baseline payload we reuse in most tests */
     private val validPayload = """
         {
             "siteId": "herd_cattle_A",
@@ -26,16 +26,13 @@ class ApplicationTest {
     """.trimIndent()
 
     /**
-     * Clears the tables that these tests mutate.
-     *
-     * Seeded sites stay in place because the application inserts them during startup
-     * and several route tests rely on those records already existing.
+     * clear mutable tables before each test run.
+     * keep seeded sites because route tests depend on those ids.
      */
     @BeforeTest
     fun clearTables() {
         /**
-         * The first test run may reach this hook before Ktor has created the tables,
-         * so cleanup needs to tolerate that startup edge case.
+         * first run can hit this before schema init, so this needs to fail quietly.
          */
         try {
             transaction {
@@ -43,7 +40,7 @@ class ApplicationTest {
                 LivestockReadings.deleteAll()
             }
         } catch (e: Exception) {
-            // Ignore the first-run case where the schema has not been initialised yet.
+            // expected on first run before schema exists
         }
     }
 
@@ -163,7 +160,7 @@ class ApplicationTest {
     fun `POST ingest critical temperature returns derived status critical`() = testApplication {
         application { module() }
 
-        // 38 C sits above the critical temperature threshold.
+        // 38 C should trip critical temp
         val criticalPayload = validPayload.replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 38.0")
 
         val response = client.post("/api/ingest") {
@@ -179,7 +176,7 @@ class ApplicationTest {
     fun `POST ingest warning temperature returns derived status warning`() = testApplication {
         application { module() }
 
-        // 32 C should land in the warning band, below the critical cutoff.
+        // 32 C should stay warning, not critical
         val warningPayload = validPayload.replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 32.0")
 
         val response = client.post("/api/ingest") {
@@ -195,7 +192,7 @@ class ApplicationTest {
     fun `POST ingest critical low activity returns derived status critical`() = testApplication {
         application { module() }
 
-        // 0.1 g is well below the low-activity threshold.
+        // 0.1 g should be critical low activity
         val criticalPayload = validPayload.replace("\"accelMagG\": 1.0", "\"accelMagG\": 0.1")
 
         val response = client.post("/api/ingest") {
@@ -211,7 +208,7 @@ class ApplicationTest {
     fun `POST ingest flee event returns derived status critical`() = testApplication {
         application { module() }
 
-        // 5.0 g should trip the flee threshold immediately.
+        // 5.0 g should trigger flee right away
         val fleePayload = validPayload.replace("\"accelMagG\": 1.0", "\"accelMagG\": 5.0")
 
         val response = client.post("/api/ingest") {
@@ -341,13 +338,13 @@ class ApplicationTest {
     fun `GET alerts filtered by site returns only that site`() = testApplication {
         application { module() }
 
-        // Seed one alert for herd_cattle_A so the site filter has something to exclude.
+        // write one alert so we can verify site filtering
         client.post("/api/ingest") {
             contentType(ContentType.Application.Json)
             setBody(validPayload.replace("\"ambientTemperatureC\": 20.0", "\"ambientTemperatureC\": 38.0"))
         }
 
-        // Filtering to a different seeded herd should return an empty list.
+        // filtering to the other herd should return empty
         val response = client.get("/api/alerts?site=herd_goat_B")
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals("[]", response.bodyAsText().trim())
@@ -370,7 +367,7 @@ class ApplicationTest {
     fun `GET alerts with no matching filter returns empty array`() = testApplication {
         application { module() }
 
-        // Clear any alerts written during this test application run before checking the empty state.
+        // clear alerts so we can assert the empty filtered response
         transaction {
             AlertsLog.deleteAll()
         }

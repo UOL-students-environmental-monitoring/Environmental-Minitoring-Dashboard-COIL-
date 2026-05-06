@@ -36,7 +36,7 @@ export async function getReadings(siteId, options = {}) {
 
 export async function getDashboardData() {
     const sites = await getSites();
-    // A missing reading for one herd should not stop the whole dashboard from loading.
+    // if one herd fails we still want the rest of the dashboard to load
     const readingResults = await Promise.allSettled(
         sites.map(async (site) => ({
             site,
