@@ -4,12 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="355aae3d-b2bc-42ce-b677-4e2cf1b53401" name="Changes" comment="trends webpage v2 + js">
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase__Changes_.xml" beforeDir="false" />
+    <list default="true" id="355aae3d-b2bc-42ce-b677-4e2cf1b53401" name="Changes" comment="README.md updated">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/gradle/libs.versions.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/AlertEngine.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/AlertEngine.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Application.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Application.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/DataTransferObjects.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/DataTransferObjects.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Databases.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Databases.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Models.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Models.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Routing.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Routing.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Serialization.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Serialization.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Templating.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/kotlin/Templating.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/main/resources/static/alerts.html" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/main/resources/static/alerts.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ktor-sample/src/test/kotlin/ApplicationTest.kt" beforeDir="false" afterPath="$PROJECT_DIR$/ktor-sample/src/test/kotlin/ApplicationTest.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,7 +120,7 @@
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.ApplicationTest.test sensor data ingestion returns 201 created">
+  <component name="RunManager" selected="Kotlin.ApplicationKt">
     <configuration name="ApplicationTest.test sensor data ingestion returns 201 created" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -263,7 +272,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777958602005</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="README.md updated">
+      <option name="closed" value="true" />
+      <created>1778052040938</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1778052040938</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -303,7 +320,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="origin/chinedu-frontend" />
+                        <option value="origin/main" />
                       </list>
                     </value>
                   </entry>
@@ -323,6 +340,7 @@
     <MESSAGE value="Added livestock_tracking.csv" />
     <MESSAGE value="trends webpage v1" />
     <MESSAGE value="trends webpage v2 + js" />
-    <option name="LAST_COMMIT_MESSAGE" value="trends webpage v2 + js" />
+    <MESSAGE value="README.md updated" />
+    <option name="LAST_COMMIT_MESSAGE" value="README.md updated" />
   </component>
 </project>
