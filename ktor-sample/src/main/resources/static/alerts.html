@@ -559,12 +559,8 @@
       });
     }
  
-    // Sort — critical first, then by timestamp descending
-    cards.sort((a, b) => {
-      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
-      if (b.severity === 'critical' && a.severity !== 'critical') return  1;
-      return b.timestamp.localeCompare(a.timestamp);
-    });
+    // Sort by timestamp descending
+    cards.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
  
     // Apply filter chip
     const filtered = cards.filter(c => {
