@@ -8,7 +8,7 @@ A full-stack environmental monitoring system for **livestock farm management**, 
 
 Developed as part of the **COMP2850 COIL (Collaborative Online International Learning)** programme.
 
-The system monitors environmental conditions critical to livestock welfare — soil moisture, water levels, air quality, and temperature — across multiple farm sites. It surfaces real-time readings, historical trends, severity-graded alerts, and a reporting portal with CSV export.
+The system monitors conditions critical to livestock welfare — GPS location, accelerometer-based movement activity, and ambient temperature — across multiple herds and farm sites. It surfaces real-time readings, historical trends, severity-graded alerts, and a reporting portal with CSV export.
 
 ### Personas
 
@@ -56,8 +56,8 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
         │   ├── Application.kt        # Entry point
         │   ├── Routing.kt            # Route registration + static file serving
         │   ├── Serialization.kt      # JSON config
-        │   ├── models/               # SensorReading, Site, AlertRule, AlertEvent, AlertSeverity
-        │   ├── routes/               # ReadingsRoutes.kt, AlertsRoutes.kt
+        │   ├── models/               # LivestockReading, Herd, AlertRule, AlertEvent, AlertSeverity
+        │   ├── routes/               # LivestockRoutes.kt, AlertsRoutes.kt
         │   ├── services/             # AlertEngine.kt, ValidationService.kt
         │   └── database/             # DatabaseConfig.kt, schemas
         └── main/resources/
@@ -127,9 +127,9 @@ cd backend
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/readings?site=X&from=Y&to=Z` | Sensor readings for a site within a date range |
-| `GET` | `/alerts?site=X&severity=Y` | Alerts filtered by site and/or severity |
-| `GET` | `/sites` | All registered monitoring sites |
+| `GET` | `/readings?site=X&from=Y&to=Z` | Livestock readings (location, activity, temperature) for a herd within a date range |
+| `GET` | `/alerts?site=X&severity=Y&type=Z` | Alerts filtered by herd, severity, and/or alert type (low_activity, geofence, flee) |
+| `GET` | `/sites` | All registered herds and farm sites |
 | `GET` | `/*` | Static frontend assets served by Ktor |
 
 Full API documentation: GitHub Wiki → `Design/API-Reference`
@@ -140,21 +140,29 @@ Full API documentation: GitHub Wiki → `Design/API-Reference`
 
 | Severity | Meaning |
 |----------|---------|
-| `NORMAL` | Reading within safe bounds |
-| `WARNING` | Reading approaching a critical threshold — monitor closely |
-| `CRITICAL` | Reading has exceeded a critical threshold — immediate action required |
+| `NORMAL` | Reading within safe bounds — no alerts triggered |
+| `WARNING` | A condition is approaching a critical threshold — monitor closely |
+| `CRITICAL` | A critical condition has been detected — immediate action required |
 
-Threshold rules per sensor type: Wiki → `Requirements/Alert-Rules`
+### Alert Types
+
+| Alert | Field | Meaning |
+|-------|-------|---------|
+| Low Activity | `alert_low_activity` | Animal movement (accel_mag_g) below expected threshold — possible injury or illness |
+| Geofence Breach | `alert_geofence` | Animal GPS position (`latitude`, `longitude`) outside permitted boundary |
+| Flee Event | `alert_flee` | Sudden high-acceleration movement indicating panic or predator threat |
+
+Threshold rules per alert type: Wiki → `Requirements/Alert-Rules`
 
 ---
 
 ## Key Features
 
-- **Live dashboard** — current sensor readings with colour-coded severity, designed for at-a-glance use on mobile (Tom persona)
-- **Historical trends** — interactive time-series charts with site and sensor type filtering
-- **Active alerts panel** — plain-language alert explanations per severity (no technical jargon)
-- **Reporting portal** — date range and site filters, cross-site summaries (min/max/avg), CSV export (Priya persona)
-- **Server-side validation** — null values, out-of-range inputs, unknown sensor types all rejected with descriptive errors
+- **Live dashboard** — current livestock readings (location, activity, temperature) with colour-coded severity, designed for at-a-glance use on mobile (Tom persona)
+- **Historical trends** — interactive time-series charts with herd and metric filtering (accel_mag_g, ambient_temperature_c)
+- **Active alerts panel** — plain-language explanations for low activity, geofence breach, and flee events (no technical jargon)
+- **Reporting portal** — date range and herd filters, cross-herd summaries (min/max/avg), CSV export (Priya persona)
+- **Server-side validation** — null values, out-of-range inputs, and unknown herd IDs all rejected with descriptive errors
 - **Accessibility** — WCAG 2.1 Level AA target; skip link, ARIA roles, keyboard navigation, contrast-checked colours; tested every sprint with axe/WAVE
 
 ---
@@ -221,11 +229,11 @@ Threshold rules per sensor type: Wiki → `Requirements/Alert-Rules`
 
 All design and requirements documentation lives in the **GitHub Wiki**:
 
-- `Requirements/COIL-Summary` — agreed scope and environmental focus
-- `Requirements/Data-Model` — sensor data fields and schema
+- `Requirements/COIL-Summary` — agreed scope and livestock monitoring focus
+- `Requirements/Data-Model` — livestock tracking data fields and schema (`timestamp`, `site_id`, `latitude`, `longitude`, `accel_mag_g`, `ambient_temperature_c`, `status`, alert flags)
 - `Requirements/Personas` — Tom (farmer) and Priya (field officer) personas
 - `Requirements/User-Stories` — full backlog with MoSCoW priority and story points
-- `Requirements/Alert-Rules` — threshold rules per sensor type
+- `Requirements/Alert-Rules` — threshold rules for low activity, geofence breach, and flee alerts
 - `Design/API-Reference` — all endpoints with example requests and error codes
 - `Design/Architecture` — class diagram
 - `Design/Database` — ERD / schema diagram
