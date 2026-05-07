@@ -6,82 +6,140 @@
     <title>Environmental Monitor - Trends</title>
     <link rel="stylesheet" href="/static/css/trends.css" />
     <!--
-    Chart.js must load before trends.js so new Chart() is defined when drawChart runs.
-    trends.js uses defer so it executes after the DOM is ready.
+    Chart.js must load before trends.js so new Chart() is defined when drawChart runs
+    Trends.js uses defer so we can store script in head, download trends.js in background
+    and then run it after all html elements have been built.
     -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/static/js/trends.js" defer></script>
 </head>
 
 <body>
-<!-- Header: left is title, navigation links on right, top of the page -->
+<!-- Header: site title on the left, navigation links on the right -->
 <header>
     <h1>Environmental Monitor</h1>
     <nav>
-        <!-- href="/trends" class="active" links to the Ktor route/dashboard -->
         <a href="/static/index.html">Dashboard</a>
-        <a href="/trends" class="active">Trends</a>
+        <a href="/static/trends" class="active">Trends</a>
         <a href="/static/alerts.html">Alerts</a>
         <a href="/static/portal.html">Portal</a>
-
     </nav>
 </header>
 
-
 <main>
-    <div class="pageTitle">Activity Overview</div>
+    <div class="page-title">Activity Overview</div>
 
     <div class="sector">
 
-        <!-- dropdown menus: site-toggle, parameter-toggle, time-toggle -->
+        <!-- control bar: all the dropdowns and buttons the user interacts with -->
         <div class="controls">
 
             <!--
-                site / Herd toggle
-                options are filled in dynamically by JavaScript on page load
+                Site / herd selector
+                options are filled in dynamically by JS when the page loads
+                the "Loading sites..." placeholder is replaced by real site names after
             -->
             <div class="control-group">
-                <label for = "site-select">Site</label>
-                <select id = "site-select">
-                    <option value= "">Loading sites...</option>
+                <label for="site-select">Site</label>
+                <select id="site-select">
+                    <option value="">Loading sites...</option>
                 </select>
             </div>
 
-            <!-- Time range toggle.
-                 data-days is a custom attribute that JavaScript reads with
-                 button.dataset.days to know how many days were selected
+            <!--
+                Month selector
+                available months are from jan 2023 to december 2023
+                december 2023 is pre-selected because it is the most recent month
+                The "YYYY-MM" value format makes it easy to build date strings in JavaScript
             -->
             <div class="control-group">
-                <label>Time</label>
+                <label for="month-select">Month</label>
+                <select id="month-select">
+                    <option value="2023-01">January 2023</option>
+                    <option value="2023-02">February 2023</option>
+                    <option value="2023-03">March 2023</option>
+                    <option value="2023-04">April 2023</option>
+                    <option value="2023-05">May 2023</option>
+                    <option value="2023-06">June 2023</option>
+                    <option value="2023-07">July 2023</option>
+                    <option value="2023-08">August 2023</option>
+                    <option value="2023-09">September 2023</option>
+                    <option value="2023-10">October 2023</option>
+                    <option value="2023-11">November 2023</option>
+                    <option value="2023-12" selected>December 2023</option>
+                </select>
+            </div>
+
+            <!--
+                Last 7 days / Full-month view toggle
+                javaScript only shows this for december 2023 (the most recent month)
+                for all other months only show 30 days since you cant show in the past 7 days
+                data-view is a custom attribute that JS reads with button.dataset.view
+            -->
+            <div class="control-group" id="time-toggle-group">
+                <label>View</label>
                 <div class="toggle-group" id="time-toggle">
-                    <button data-days="7" class="selected">7 days</button>
-                    <button data-days="30">30 days</button>
+                    <button data-view="7days" class="selected">Last 7 days</button>
+                    <button data-view="month">Full month</button>
                 </div>
             </div>
 
-            <!-- Parameter toggle.
-                 data-param is read by JavaScript to decide which parameter
-                 from response from the API to plot on the Y axis
+            <!--
+                Parameter dropdown
+                controls which sensor field is drawn on the chart and what field
+                is included when the user downloads data.
+                "Temperature" - ambientTemperatureC field from ReadingDTO
+                "Activity"    - accelMagG field from ReadingDTO
             -->
             <div class="control-group">
-                <label>Parameter</label>
-                <div class="toggle-group" id="param-toggle">
-                    <button data-param="temp" class="selected">Temp</button>
-                    <button data-param="activity">Activity</button>
-                </div>
+                <label for="param-select">Parameter</label>
+                <select id="param-select">
+                    <option value="temp">Temperature</option>
+                    <option value="activity">Activity</option>
+                </select>
+            </div>
+
+            <!--
+                Download section: choose format and download
+                a small line divider to split controls for download and graph
+            -->
+            <div class="control-divider"></div>
+
+            <!--
+                Format selector
+                CSV gives a plain spreadsheet-style file
+                HTML gives a formatted table you can view in-browser
+            -->
+            <div class="control-group">
+                <label for="format-select">Format</label>
+                <select id="format-select">
+                    <option value="csv">CSV</option>
+                    <option value="html">HTML</option>
+                </select>
+            </div>
+
+            <!--
+                Download button
+                fetches the current data (same site, month, and parameter as the chart)
+                saves it to the user's device in the chosen format
+                the empty label keeps it vertically aligned with the other controls.
+            -->
+            <div class="control-group">
+                <label>&nbsp</label>
+                <button id="download-btn" class="download-btn">Download</button>
             </div>
 
         </div>
 
-        <!-- shown when data is loading from the API -->
+        <!-- message shown while chart data is being fetched from api -->
         <div id="loading-message" style="display:none">Chart is loading...</div>
 
-        <!-- shown only if the API call fails -->
-        <div id="error-message" style="display:none">Could not load data</div>
+        <!-- message shown if api call fails -->
+        <div id="error-message" style="display:none">Could not load data.</div>
 
         <!--
-            Chart.js draws the graph onto this <canvas> element,
-            the surrounding div lets us control height with CSS
+            Chart.js draws the line graph onto this <canvas> element
+            the wrapping div lets CSS control the height without touching Chart.js settings
         -->
         <div class="chart-wrapper">
             <canvas id="trends-chart"></canvas>
@@ -90,3 +148,4 @@
     </div>
 </main>
 </body>
+</html>
