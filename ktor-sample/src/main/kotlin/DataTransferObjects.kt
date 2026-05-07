@@ -47,7 +47,6 @@ data class ReadingDTO(
     val accelMagG: Double,
     val ambientTemperatureC: Double,
     val status: String,
-
     // alert flags, 1/true if that alert was raised for this reading
     val alertTriggered: Boolean,
     val alertLowActivity: Boolean,

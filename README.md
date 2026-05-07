@@ -1,6 +1,6 @@
 # Environmental Monitoring Dashboard — COMP2850 COIL Project
 
-A full-stack environmental monitoring system for **livestock farm management**, built with **Kotlin (Ktor)** and **HTML/CSS/JavaScript** served directly by Ktor. The current application ingests livestock sensor readings, seeds an H2 database from the bundled `livestock_tracking.csv` dataset, evaluates welfare alerts for live ingests, and serves dashboard pages for farm monitoring.
+A full-stack environmental monitoring system for **livestock farm management**, built with **Kotlin (Ktor)** on the backend and **HTML/CSS/JavaScript** on the frontend (served as static assets directly by Ktor). The system ingests sensor readings from farm sites, evaluates alert thresholds, and provides a live dashboard and reporting portal for farmers and agricultural field officers.
 
 ---
 
@@ -8,7 +8,7 @@ A full-stack environmental monitoring system for **livestock farm management**, 
 
 Developed as part of the **COMP2850 COIL (Collaborative Online International Learning)** programme.
 
-The current dataset and implementation focus on livestock welfare signals: herd GPS position, accelerometer movement, ambient temperature, derived status, and alert flags. The app currently supports two seeded monitoring sites: `herd_cattle_A` and `herd_goat_B`, displayed in the dashboard as **East Pasture Zone** and **North Hillside Zone**, with readings loaded from `ktor-sample/src/main/resources/livestock_tracking.csv`.
+The system monitors conditions critical to livestock welfare — GPS location, accelerometer-based movement activity, and ambient temperature — across multiple herds and farm sites. It surfaces real-time readings, historical trends, severity-graded alerts, and a reporting portal with CSV export.
 
 ### Personas
 
@@ -27,14 +27,13 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
 |-------|-----------|
 | Backend | Kotlin + Ktor + Gradle |
 | Frontend | HTML / CSS / JavaScript (ES Modules) — served by Ktor as static assets |
-| Charts | Chart.js CDN is used by the trends page assets |
-| Database | H2 in-memory database for the current app; PostgreSQL connection settings are present in config |
-| ORM | Exposed |
-| Linting | Detekt + KtLint are documented as desired gates but are not currently wired into Gradle |
-| In-code docs | KDoc/comments are present in the Kotlin and frontend files |
-| CI/CD | GitHub Actions placeholder workflow |
-| Testing | Kotlin test suite through Gradle |
-| Accessibility | Dashboard includes a skip link, ARIA labels/roles, keyboard-focus states, and responsive layout work |
+| Charts | Chart.js (CDN) |
+| Database | H2 in-memory (dev) / PostgreSQL (prod) via Exposed ORM |
+| Linting | Detekt + KtLint |
+| In-code docs | KDoc on all public functions and classes |
+| CI/CD | GitHub Actions |
+| Testing | JUnit (backend unit + integration) |
+| Accessibility | WCAG 2.1 Level AA target — axe DevTools / WAVE every sprint |
 
 ---
 
@@ -46,39 +45,34 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
 ├── SPRINT PLAN.md
 ├── docs/
 │   ├── Personas.md
-│   ├── wireframes/                       # Versioned — never delete old versions
-│   └── diagrams/                         # ERD and class diagrams — versioned
-├── frontend/                             # Not the active frontend root
-└── ktor-sample/                          # Active Ktor application
+│   ├── wireframes/                   # Versioned — never delete old versions
+│   └── diagrams/                     # ERD and class diagrams — versioned
+├── frontend/                         # Stub — frontend lives inside Ktor (see below)
+└── backend/
     ├── gradlew / build.gradle.kts / settings.gradle.kts
     ├── gradle/
     └── src/
-        ├── main/kotlin/
-        │   ├── Application.kt            # Ktor entry point
-        │   ├── Routing.kt                # API routes + static asset serving
-        │   ├── Serialization.kt          # JSON config
-        │   ├── Templating.kt             # Thymeleaf setup/sample route
-        │   ├── Models.kt                 # Sites, LivestockReadings, AlertsLog schemas
-        │   ├── DataTransferObjects.kt    # LivestockPayload, AlertDTO, ReadingDTO
-        │   ├── Databases.kt              # H2 setup, seeded sites, CSV import
-        │   └── AlertEngine.kt            # Livestock alert rules
+        ├── main/kotlin/com/environmental/
+        │   ├── Application.kt        # Entry point
+        │   ├── Routing.kt            # Route registration + static file serving
+        │   ├── Serialization.kt      # JSON config
+        │   ├── models/               # LivestockReading, Herd, AlertRule, AlertEvent, AlertSeverity
+        │   ├── routes/               # LivestockRoutes.kt, AlertsRoutes.kt
+        │   ├── services/             # AlertEngine.kt, ValidationService.kt
+        │   └── database/             # DatabaseConfig.kt, schemas
         └── main/resources/
             ├── application.yaml
-            ├── livestock_tracking.csv    # 140,154 readings across two herd sites
             ├── logback.xml
-            ├── static/                   # Static frontend served by Ktor
-            │   ├── index.html            # Dashboard
-            │   ├── alerts.html           # Alerts page
-            │   ├── css/
-            │   │   ├── style.css
-            │   │   └── trends.css
-            │   └── js/
-            │       ├── api.js            # Dashboard API wrapper
-            │       ├── main.js           # Dashboard rendering logic
-            │       └── trends.js         # Chart.js trends logic
-            └── templates/thymeleaf/
-                ├── index.html
-                └── trends.html           # Trends page served at /trends
+            └── static/              # ← FRONTEND LIVES HERE (served by Ktor)
+                ├── index.html       # Live dashboard (P1)
+                ├── trends.html      # Historical trends + charts (P2)
+                ├── alerts.html      # Active alerts panel (P4)
+                ├── portal.html      # Reporting portal + CSV export (P5)
+                ├── css/style.css
+                └── js/
+                    ├── api.js       # All fetch calls to the backend API
+                    ├── charts.js    # Chart.js rendering helpers (P2)
+                    └── main.js      # Shared utilities
 ```
 
 ---
@@ -87,11 +81,11 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
 
 | Person | Area |
 |--------|------|
-| **P1** | Dashboard UI & Layout (`ktor-sample/src/main/resources/static/index.html`) |
-| **P2** | Charts & Historical Trends (`/trends`, `templates/thymeleaf/trends.html`, `static/js/trends.js`, `static/css/trends.css`) |
-| **P3** | Data Management & Validation (`Models.kt`, `Databases.kt`, `Routing.kt`) |
-| **P4** | Alert System (`static/alerts.html`, `AlertEngine.kt`, `/api/alerts`) |
-| **P5** | Analysis & Reporting Portal planned work; no `portal.html` exists in the current codebase |
+| **P1** | Dashboard UI & Layout (`index.html`) |
+| **P2** | Charts & Historical Trends (`trends.html`, `js/charts.js`) |
+| **P3** | Data Management & Validation (backend models, DB schemas, validation) |
+| **P4** | Alert System (`alerts.html`, `AlertEngine.kt`, `AlertsRoutes.kt`) |
+| **P5** | Analysis & Reporting Portal (`portal.html`) |
 
 ---
 
@@ -99,34 +93,32 @@ Full persona detail: [`docs/Personas.md`](docs/Personas.md)
 
 ### Prerequisites
 
-- JDK 21, matching the Gradle Kotlin toolchain
-- Gradle wrapper included in `ktor-sample/`
+- JDK 17+
+- Gradle (wrapper included — no global install needed)
 - A modern browser (Chrome, Firefox, Safari, Edge)
 
 ### Run the backend (serves the frontend too)
 
 ```bash
-cd ktor-sample
-bash ./gradlew run
+cd backend
+./gradlew run
 ```
 
-Open [http://localhost:8080](http://localhost:8080). The root route redirects to `/static/index.html`.
+Open [http://localhost:8080](http://localhost:8080) — all pages served directly by Ktor.
 
 ### Run tests
 
 ```bash
-cd ktor-sample
-bash ./gradlew test
+cd backend
+./gradlew test
 ```
 
 ### Run linting
 
-Detekt and KtLint are not currently configured as Gradle tasks in this checkout. `bash ./gradlew tasks --all` currently exposes the standard build/test tasks, including:
-
 ```bash
-cd ktor-sample
-bash ./gradlew test
-bash ./gradlew build
+cd backend
+./gradlew detekt
+./gradlew ktlintCheck
 ```
 
 ---
@@ -135,17 +127,12 @@ bash ./gradlew build
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/ingest` | Accepts a `LivestockPayload`, validates it, evaluates alerts, saves the reading, and records any alert rows |
-| `GET` | `/api/readings?site=X&from=Y&to=Z` | Returns readings for one required site, optionally filtered by ISO datetime range |
-| `GET` | `/api/alerts?site=X&severity=Y` | Returns the latest 50 alerts, optionally filtered by site and/or severity |
-| `GET` | `/api/sites` | Returns the seeded monitoring sites/herds |
-| `GET` | `/static/*` | Serves static frontend assets from `src/main/resources/static/` |
-| `GET` | `/` | Redirects to `/static/index.html` |
-| `GET` | `/dashboard` | Redirects to `/static/index.html` |
-| `GET` | `/alerts` | Redirects to `/static/alerts.html` |
-| `GET` | `/trends` | Serves the Chart.js trends page through Thymeleaf |
+| `GET` | `/readings?site=X&from=Y&to=Z` | Livestock readings (location, activity, temperature) for a herd within a date range |
+| `GET` | `/alerts?site=X&severity=Y&type=Z` | Alerts filtered by herd, severity, and/or alert type (low_activity, geofence, flee) |
+| `GET` | `/sites` | All registered herds and farm sites |
+| `GET` | `/*` | Static frontend assets served by Ktor |
 
-Payload fields used by the app: `siteId`, `timeStamp`, `latitude`, `longitude`, `accelMagG`, and `ambientTemperatureC`.
+Full API documentation: GitHub Wiki → `Design/API-Reference`
 
 ---
 
@@ -153,37 +140,40 @@ Payload fields used by the app: `siteId`, `timeStamp`, `latitude`, `longitude`, 
 
 | Severity | Meaning |
 |----------|---------|
-| `normal` | Reading within safe bounds |
-| `warning` | Reading approaching a critical threshold — monitor closely |
-| `critical` | Reading has exceeded a critical threshold — immediate action required |
+| `NORMAL` | Reading within safe bounds — no alerts triggered |
+| `WARNING` | A condition is approaching a critical threshold — monitor closely |
+| `CRITICAL` | A critical condition has been detected — immediate action required |
 
-Current alert rules:
+### Alert Types
 
-- Temperature above 30 C creates a warning; above 35 C creates a critical alert.
-- Movement below 0.6 g creates a low-activity warning; below 0.3 g creates a critical low-activity alert.
-- Movement above 3.0 g creates a flee-event warning; above 4.0 g creates a critical flee-event alert.
-- Temperature above 30 C combined with movement below 0.6 g creates a critical `heat_collapse` alert.
+| Alert | Field | Meaning |
+|-------|-------|---------|
+| Low Activity | `alert_low_activity` | Animal movement (accel_mag_g) below expected threshold — possible injury or illness |
+| Geofence Breach | `alert_geofence` | Animal GPS position (`latitude`, `longitude`) outside permitted boundary |
+| Flee Event | `alert_flee` | Sudden high-acceleration movement indicating panic or predator threat |
+
+Threshold rules per alert type: Wiki → `Requirements/Alert-Rules`
 
 ---
 
 ## Key Features
 
-- **Live dashboard** — Ktor-served dashboard with GPS-style site map, site filter, active site count, average temperature, average motion, and recent critical alerts linked to the alerts page
-- **Bundled livestock dataset** — `livestock_tracking.csv` seeds readings for `herd_cattle_A` and `herd_goat_B`
-- **Active alerts** — `/api/alerts` exposes severity-graded alert rows created by ingested readings, and `alerts.html` provides a dedicated alerts interface
-- **Historical trends page** — `/trends` loads Chart.js controls from `/api/sites` and `/api/readings`
-- **Server-side validation** — blank site IDs, unknown sites, invalid coordinates, negative accelerometer values, extreme temperatures, malformed JSON, and bad date filters return 4xx responses
-- **Accessibility** — dashboard includes skip-link support, semantic sections, ARIA labels, live regions, keyboard-focus styling, and responsive layout work
+- **Live dashboard** — current livestock readings (location, activity, temperature) with colour-coded severity, designed for at-a-glance use on mobile (Tom persona)
+- **Historical trends** — interactive time-series charts with herd and metric filtering (accel_mag_g, ambient_temperature_c)
+- **Active alerts panel** — plain-language explanations for low activity, geofence breach, and flee events (no technical jargon)
+- **Reporting portal** — date range and herd filters, cross-herd summaries (min/max/avg), CSV export (Priya persona)
+- **Server-side validation** — null values, out-of-range inputs, and unknown herd IDs all rejected with descriptive errors
+- **Accessibility** — WCAG 2.1 Level AA target; skip link, ARIA roles, keyboard navigation, contrast-checked colours; tested every sprint with axe/WAVE
 
 ---
 
 ## Development Workflow
 
 - **No direct commits to `main`** — all changes via feature branches and pull requests
-- Every PR should be reviewed before merge
-- Run `bash ./gradlew test` from `ktor-sample/` before opening a PR
-- Update this README when behavior, routes, setup, or project structure changes
-- Keep comments useful and plain; remove stale authorship or generated-code notes
+- Every PR requires at least one peer review and must pass CI before merge
+- Run `./gradlew detekt` and `./gradlew ktlintCheck` before opening a PR
+- KDoc comments required on all public functions and classes
+- AI usage must be noted inline: `// Used [model] to assist with X — lines Y–Z`
 
 ---
 
@@ -191,22 +181,22 @@ Current alert rules:
 
 | Type | Scope |
 |------|-------|
-| Unit tests | Alert engine status and alert-rule behavior |
-| Integration tests | Ktor route tests for root redirect, static dashboard assets, ingest, alerts, readings, and sites |
-| UX / manual tests | Manual dashboard checks should cover loading, empty, error, and filtered states |
-| Accessibility tests | Dashboard should be checked with keyboard navigation and an accessibility scanner before submission |
-| Security tests | Malformed JSON, invalid date filters, unknown sites, and out-of-range inputs are covered by route tests |
+| Unit tests | Every function with logic; all boundary conditions |
+| Integration tests | Every API endpoint tested end-to-end |
+| UX / manual tests | Documented in Wiki with date, tester, tasks, findings |
+| Accessibility tests | axe/WAVE run every sprint; zero Level A WCAG errors required |
+| Security tests | Malformed, oversized, and out-of-range inputs tested explicitly |
 
 ---
 
 ## Definition of Done
 
 1. Code is on a feature branch — never committed directly to `main`
-2. Public Kotlin functions/classes have useful comments or KDoc where needed
-3. Available Gradle checks pass; currently `bash ./gradlew test` from `ktor-sample/`
-4. Tests written and passing for changed backend behavior
+2. KDoc comments on all public functions
+3. Detekt + KtLint pass — zero significant issues
+4. Tests written and passing
 5. PR opened, reviewed, and approved by at least one teammate
-6. CI passes on the PR once real build/test steps replace the placeholder workflow
+6. CI passes on the PR
 7. Merged to `main`
 
 ---
@@ -226,24 +216,27 @@ Current alert rules:
 
 | Risk | Mitigation |
 |------|-----------|
-| README or sprint docs drift from the actual `ktor-sample/` app | Verify setup, routes, and filenames against the code before updating docs |
-| Missing routes for planned pages such as `/static/portal.html` | Register routes or update navigation before presenting those pages as complete |
-| CSV import silently skips bad rows | Check seeded row counts and malformed rows when changing `livestock_tracking.csv` or import logic |
-| Tests written only at the end | Keep route and alert-engine tests beside each feature change |
-| WCAG failures found late | Run keyboard and scanner checks on dashboard and alerts pages before submission |
-| Main branch broken | Use feature branches, PR review, and CI once the workflow has real Gradle commands |
+| P3 API not ready — blocks P1, P2, P5 | P3 provides agreed mock JSON responses by end of Week 1 |
+| P5 duplicating P3's data logic | P5 must reuse P3's API only — enforced in PR review |
+| Tests written only at the end | Tests listed as tasks per week — non-optional |
+| WCAG failures found late | P1 runs axe/WAVE every sprint and logs results |
+| Documentation left to the last week | Wiki pages assigned by name and sprint — stubs created in Week 1 |
+| Main branch broken | Branch protection + required CI pass before any merge to `main` |
 
 ---
 
 ## Documentation
 
-Current repository documentation lives in:
+All design and requirements documentation lives in the **GitHub Wiki**:
 
-- [`README.md`](README.md) — current setup, routes, feature state, and project structure
-- [`SPRINT PLAN.md`](SPRINT%20PLAN.md) — sprint planning and role allocation
-- [`docs/Personas.md`](docs/Personas.md) — project personas
-- [`docs/wireframes/`](docs/wireframes/) — versioned wireframe artifacts
-- [`docs/diagrams/`](docs/diagrams/) — diagram location
-- [`ktor-sample/README.md`](ktor-sample/README.md) — generated Ktor starter README
-
-Documentation should be updated in the same change as any behavior, route, setup, or structure change.
+- `Requirements/COIL-Summary` — agreed scope and livestock monitoring focus
+- `Requirements/Data-Model` — livestock tracking data fields and schema (`timestamp`, `site_id`, `latitude`, `longitude`, `accel_mag_g`, `ambient_temperature_c`, `status`, alert flags)
+- `Requirements/Personas` — Tom (farmer) and Priya (field officer) personas
+- `Requirements/User-Stories` — full backlog with MoSCoW priority and story points
+- `Requirements/Alert-Rules` — threshold rules for low activity, geofence breach, and flee alerts
+- `Design/API-Reference` — all endpoints with example requests and error codes
+- `Design/Architecture` — class diagram
+- `Design/Database` — ERD / schema diagram
+- `Design/Wireframes` — all wireframe versions (never deleted — versioned as v1, v2, v3)
+- `Testing/Accessibility-Log` — axe/WAVE results per sprint
+- `Testing/UX-Tests` — user test records
