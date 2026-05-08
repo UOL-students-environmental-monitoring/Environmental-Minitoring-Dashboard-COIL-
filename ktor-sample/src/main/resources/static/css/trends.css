@@ -1,0 +1,336 @@
+/*
+    trends.css
+    Styles for the Trends page - built to match the dashboard's design system
+    so both pages feel like part of the same app.
+
+    The main things borrowed from style.css (dashboard):
+      - CSS custom properties (variables) for all colours and spacing
+      - Avenir Next font family
+      - The subtle grid background on the body
+      - The light header with a bottom border instead of a dark banner
+      - Green accent colour (#24745a) instead of the old blue
+      - The wireframe-panel card style
+*/
+
+/* -- Design tokens (same values as the dashboard's style.css) ---------- */
+:root {
+    --bg:            #f6f7f2;   /* warm off-white page background */
+    --surface:       #ffffff;   /* card / input background */
+    --surface-muted: #eef2ea;   /* subtle green tint, used for button hover */
+    --ink:           #18211d;   /* near-black for body text */
+    --muted:         #68756d;   /* grey-green for labels and secondary text */
+    --line:          #d8dfd6;   /* border colour throughout */
+    --accent:        #24745a;   /* main green - buttons, active states */
+    --accent-strong: #14503f;   /* darker green for hover states */
+    --danger:        #b63d32;   /* red for error messages */
+    --blueprint:     #1c67d2;   /* blue used for eyebrow labels */
+    --shadow:        0 18px 40px rgba(38, 48, 42, 0.08);
+    --radius:        8px;
+    --space:         clamp(1rem, 2vw, 1.5rem); /* fluid gap used in layout */
+}
+
+/* -- Global reset ------------------------------------------------------ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/*
+    font: inherit on form elements forces the browser to use our chosen font
+    instead of the default system UI font - browsers don't inherit fonts
+    onto <button>, <select>, or <input> automatically
+*/
+button,
+select,
+input {
+    font: inherit;
+}
+
+/* -- Body -------------------------------------------------------------- */
+body {
+    min-height: 100vh;
+    /*
+        The stacked gradients draw the faint blueprint grid you see on the dashboard.
+        The first gradient draws vertical lines, the second draws horizontal ones.
+        Both sit on top of the warm --bg colour at the bottom.
+    */
+    background:
+        linear-gradient(90deg, rgba(28, 103, 210, 0.04) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(rgba(28, 103, 210, 0.035) 1px, transparent 1px) 0 0 / 24px 24px,
+        var(--bg);
+    color: var(--ink);
+    /* Avenir is the dashboard font; the fallbacks cover Windows and other systems */
+    font-family: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+/* -- Typography helpers ------------------------------------------------ */
+h1, h2, h3, p {
+    margin-top: 0;
+}
+
+h1 {
+    margin-bottom: 0;
+    /* clamp() scales the font size between the two extremes based on viewport width */
+    font-size: clamp(1.45rem, 3vw, 2.25rem);
+    line-height: 1.05;
+}
+
+h2 {
+    margin-bottom: 0;
+    font-size: clamp(1.15rem, 2vw, 1.55rem);
+    line-height: 1.15;
+}
+
+/*
+    .eyebrow is a small uppercase label shown above titles,
+    same pattern used in the dashboard for "Livestock environment" and "Dashboard"
+*/
+.eyebrow {
+    margin: 0 0 0.25rem;
+    color: var(--blueprint);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* -- Site header ------------------------------------------------------- */
+/*
+    The dashboard uses a light header with a bottom border rather than
+    the old dark navy banner - switching to this makes the pages look connected.
+*/
+.site-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    width: min(1180px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 1.25rem 0 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+/* -- Top nav (same class names as the dashboard) ----------------------- */
+.top-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.top-nav a {
+    min-height: 2.35rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 0.62rem 0.85rem;
+    color: var(--muted);      /* 4.95:1 contrast on white - passes WCAG AA */
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.top-nav a:hover,
+.top-nav a:focus {
+    border-color: var(--accent);
+    color: var(--accent-strong);
+    outline: none;
+}
+
+/* the current page link - green fill, white text, 5.78:1 contrast */
+.top-nav .is-active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #ffffff;
+}
+
+/* -- Main content wrapper ---------------------------------------------- */
+main {
+    width: min(1180px, calc(100% - 2rem));
+    margin: var(--space) auto 2rem;
+}
+
+/* -- Panel header (eyebrow + heading inside the card) ------------------ */
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+/* -- White card that wraps the controls and chart ---------------------- */
+/*
+    Copied directly from .wireframe-panel in the dashboard's style.css -
+    same border, radius, shadow, and semi-transparent white background.
+*/
+.sector {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--shadow);
+    padding: var(--space);
+}
+
+/* -- Controls row ------------------------------------------------------ */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* label above each dropdown - matches the dashboard's small uppercase style */
+.control-group label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+}
+
+/* -- Dropdown selects -------------------------------------------------- */
+/* copied from the dashboard's global select rule in style.css */
+.control-group select {
+    min-height: 2.25rem;
+    min-width: 140px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.45rem 1.9rem 0.45rem 0.65rem;
+    color: var(--ink);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.control-group select:focus {
+    border-color: var(--accent);
+    /* the semi-transparent green glow matches the dashboard's focus ring */
+    outline: 3px solid rgba(36, 116, 90, 0.18);
+}
+
+/* -- Thin vertical divider between chart controls and download controls - */
+.control-divider {
+    width: 1px;
+    background-color: var(--line);
+    align-self: stretch;
+    margin: 0 0.25rem;
+}
+
+/* -- Last-7-days / Full-month toggle ----------------------------------- */
+.toggle-group {
+    display: flex;
+}
+
+.toggle-group button {
+    padding: 0.45rem 1rem;
+    /* --accent green on white gives 5.78:1 contrast - passes WCAG AA */
+    border: 1px solid var(--accent);
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-right: -1px; /* overlaps the border so there's no double line between buttons */
+    transition: background-color 0.15s;
+}
+
+.toggle-group button:first-child {
+    border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.toggle-group button:last-child {
+    border-radius: 0 var(--radius) var(--radius) 0;
+    margin-right: 0;
+}
+
+/* selected state: green fill, white text - same pattern as .top-nav .is-active */
+.toggle-group button.selected {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+}
+
+.toggle-group button:hover:not(.selected) {
+    /* --surface-muted is the soft green tint from the dashboard's colour palette */
+    background: var(--surface-muted);
+}
+
+/* -- Spacer above the download button ---------------------------------- */
+/*
+    This keeps the download button vertically aligned with the other controls.
+    It's a <span> not a <label> so screen readers don't pick it up as an orphaned label.
+*/
+.control-label-spacer {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1;
+}
+
+/* -- Download button --------------------------------------------------- */
+/* uses the same green as nav active and toggle selected - visually consistent */
+.download-btn {
+    padding: 0.5rem 1.1rem;
+    border: 1px solid var(--accent);
+    background: var(--accent);   /* 5.78:1 contrast with white text - passes WCAG AA */
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.download-btn:hover {
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
+}
+
+/* inactive while a download is in progress - WCAG exempts disabled elements */
+.download-btn:disabled {
+    background: var(--muted);
+    border-color: var(--muted);
+    cursor: not-allowed;
+}
+
+/* -- Chart canvas wrapper ---------------------------------------------- */
+.chart-wrapper {
+    position: relative;
+    height: 400px;
+}
+
+/* -- Loading and error states ------------------------------------------ */
+#loading-message {
+    text-align: center;
+    padding: 3.5rem 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+#error-message {
+    text-align: center;
+    padding: 3.5rem 0;
+    color: var(--danger);
+    font-size: 0.95rem;
+    display: none;
+}
+
+/* -- Responsive -------------------------------------------------------- */
+@media (max-width: 680px) {
+    /* stack the header title and nav vertically on small screens */
+    .site-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .top-nav {
+        justify-content: flex-start;
+    }
+}
