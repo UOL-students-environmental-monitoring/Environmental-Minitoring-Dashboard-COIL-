@@ -24,6 +24,7 @@ private const val MAX_LONGITUDE = 180.0
 private const val MIN_AMBIENT_TEMP_C = -50.0
 private const val MAX_AMBIENT_TEMP_C = 60.0
 private const val ALERTS_PAGE_SIZE = 50
+private const val DASHBOARD_CRITICAL_ALERTS_LIMIT = 20
 
 fun Application.configureRouting() {
     routing {
@@ -31,6 +32,7 @@ fun Application.configureRouting() {
         get("/") { call.respondRedirect("/static/index.html") }
         ingestRoute()
         alertsRoute()
+        dashboardCriticalAlertsRoute()
         readingsRoute()
         sitesRoute()
     }
@@ -140,6 +142,35 @@ private fun Route.alertsRoute() {
                         severity = row[AlertsLog.severity],
                         message = row[AlertsLog.message],
                         timeStamp = row[AlertsLog.timeStamp].toString()
+                    )
+                }
+            }
+        call.respond(alerts)
+    }
+}
+
+// -----------------------------------------------------------
+// GET /api/dashboard/critical-alerts
+// returns the most recent critical-severity alerts for the
+// dashboard panel.
+// optional site filter.
+// -----------------------------------------------------------
+private fun Route.dashboardCriticalAlertsRoute() {
+    get("/api/dashboard/critical-alerts") {
+        val siteFilter = call.request.queryParameters["site"]
+        val alerts =
+            transaction {
+                var query = AlertsLog.selectAll().andWhere { AlertsLog.severity eq "critical" }
+                if (siteFilter != null) query = query.andWhere { AlertsLog.siteId eq siteFilter }
+                query.orderBy(AlertsLog.timeStamp to SortOrder.DESC).limit(DASHBOARD_CRITICAL_ALERTS_LIMIT).map { row ->
+                    DashboardAlertDTO(
+                        id = row[AlertsLog.id],
+                        siteId = row[AlertsLog.siteId],
+                        parameter = row[AlertsLog.parameter],
+                        severity = row[AlertsLog.severity],
+                        message = row[AlertsLog.message],
+                        timeStamp = row[AlertsLog.timeStamp].toString(),
+                        source = "readings"
                     )
                 }
             }

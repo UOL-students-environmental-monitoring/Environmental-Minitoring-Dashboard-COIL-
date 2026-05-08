@@ -79,11 +79,12 @@ private fun seedTableFromCsv() {
                 if (p.size < CSV_MIN_COLUMNS) return@forEach
                 // encapsulated in a try catch so a invalid row doesn't crash whole process
                 try {
-                    // inserting values from row into tables
-                    // parse converts the string and trim removes whitespace
-                    LivestockReadings.insert {
-                        it[timeStamp] = LocalDateTime.parse(p[0].trim(), formatter)
-                        it[siteId] = p[1].trim()
+                    val parsedTime = LocalDateTime.parse(p[0].trim(), formatter)
+                    val rowSiteId = p[1].trim()
+
+                    val insertedId = LivestockReadings.insert {
+                        it[timeStamp] = parsedTime
+                        it[siteId] = rowSiteId
                         it[latitude] = p[2].trim().toDouble()
                         it[longitude] = p[CSV_IDX_LONGITUDE].trim().toDouble()
                         it[accelMagG] = p[CSV_IDX_ACCEL].trim().toDouble()
@@ -93,6 +94,37 @@ private fun seedTableFromCsv() {
                         it[alertLowActivity] = p[CSV_IDX_ALERT_LOW_ACTIVITY].trim().toInt()
                         it[alertGeofence] = p[CSV_IDX_ALERT_GEOFENCE].trim().toInt()
                         it[alertFlee] = p[CSV_IDX_ALERT_FLEE].trim().toInt()
+                    } get LivestockReadings.id
+
+                    if (p[CSV_IDX_ALERT_LOW_ACTIVITY].trim() == "1") {
+                        AlertsLog.insert {
+                            it[readingId] = insertedId
+                            it[siteId] = rowSiteId
+                            it[parameter] = "low_activity"
+                            it[severity] = "warning"
+                            it[message] = "Reduced movement detected — monitor for illness"
+                            it[timeStamp] = parsedTime
+                        }
+                    }
+                    if (p[CSV_IDX_ALERT_GEOFENCE].trim() == "1") {
+                        AlertsLog.insert {
+                            it[readingId] = insertedId
+                            it[siteId] = rowSiteId
+                            it[parameter] = "geofence"
+                            it[severity] = "critical"
+                            it[message] = "Geofence breach detected — animal outside permitted area"
+                            it[timeStamp] = parsedTime
+                        }
+                    }
+                    if (p[CSV_IDX_ALERT_FLEE].trim() == "1") {
+                        AlertsLog.insert {
+                            it[readingId] = insertedId
+                            it[siteId] = rowSiteId
+                            it[parameter] = "flee"
+                            it[severity] = "critical"
+                            it[message] = "Flee event detected — check for rustling or predator"
+                            it[timeStamp] = parsedTime
+                        }
                     }
                 } catch (e: Exception) {
                     println("Skipping invalid CSV row: ${e.message}")
