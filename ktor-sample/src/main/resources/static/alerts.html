@@ -563,16 +563,12 @@
  
     // Apply filter chip
     
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     const filtered = cards.filter(c => {
-      const cardDate = new Date(c.timestamp);
-      if (activeFilter === 'all')      return cardDate >= thirtyDaysAgo;
-      if (activeFilter === 'critical') return c.severity === 'critical' && cardDate >= thirtyDaysAgo;
-      if (activeFilter === 'warning')  return c.severity === 'warning' && cardDate >= thirtyDaysAgo;
-      return c.parameter === activeFilter && cardDate >= thirtyDaysAgo;
-    });
+      if (activeFilter === 'all')      return true;
+      if (activeFilter === 'critical') return c.severity === 'critical';
+      if (activeFilter === 'warning')  return c.severity === 'warning';
+      return c.parameter === activeFilter;
+    }).slice(0, 30);
  
     // Update count label
     document.getElementById('count-label').textContent =
