@@ -99,7 +99,7 @@ object AlertEngine {
     ) {
         /**
          * Temperature Rules
-         * temperature above 30°C is dangerous, animals sensitive to heat.
+         * temperature above 30°C is dangerous, animals sensitive to heat
          */
         if (data.ambientTemperatureC > CRITICAL_TEMP_C) {
             alerts.add(
@@ -122,10 +122,10 @@ object AlertEngine {
 
     /**
      * Low Activity Rules
-     * accelMagG measures movement in g-force.
-     * stationary animal is around 1.0g.
-     * below 1.0 during the day, the animal may be unhealthy.
-     * values less than 0.5 g infer the animal is almost completely motionless.
+     * accelMagG measures movement in g-force
+     * stationary animal is around 1.0g
+     * below 1.0 during the day, the animal may be unhealthy
+     * values less than 0.5 g infer the animal is almost completely motionless
      */
     private fun checkActivity(
         data: LivestockPayload,

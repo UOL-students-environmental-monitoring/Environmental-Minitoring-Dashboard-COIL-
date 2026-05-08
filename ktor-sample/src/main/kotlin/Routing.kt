@@ -38,7 +38,10 @@ fun Application.configureRouting() {
     }
 }
 
-/** returns an error message string if validation fails, null if the payload is valid */
+/**
+ * checks that the incoming sensor payload makes physical sense before we touch the database
+ * returns a plain-English error message if looks wrong, null if everything is fine.
+ */
 private fun validatePayload(payload: LivestockPayload): String? {
     if (payload.siteId.isBlank()) return "siteId is blank. Cannot be blank"
     if (payload.latitude < MIN_LATITUDE || payload.latitude > MAX_LATITUDE) {
@@ -54,6 +57,10 @@ private fun validatePayload(payload: LivestockPayload): String? {
     return null
 }
 
+/**
+ * writes a validated reading and any alerts it triggered to the database
+ * we work out which alert flags to set here that way insert block stays readable
+ */
 private fun saveReading(
     payload: LivestockPayload,
     parsedTime: LocalDateTime,
@@ -92,6 +99,13 @@ private fun saveReading(
     }
 }
 
+/**
+ * POST /api/ingest
+ *
+ * main entry point for sensor data, validates the payload, checks the site exists,
+ * runs it through the alert engine, then saves the reading and any triggered alerts.
+ * returns 201 with the derived status on success, or 400 if anything looks wrong.
+ */
 private fun Route.ingestRoute() {
     post("/api/ingest") {
         try {
@@ -121,11 +135,12 @@ private fun Route.ingestRoute() {
 }
 
 /**
- * ---------------------------------------------
  * GET /api/alerts
- * returns the last 50 alerts.
- * both query parameters are optional filters.
- * ---------------------------------------------
+ *
+ * returns the most recent 50 alerts across all sites. You can narrow things down with
+ * optional query parameters:
+ * - [site] - specific herd filter, e.g. `?site=herd_cattle_A`
+ * - [severity] - severity level filter, e.g. `?severity=critical`
  */
 private fun Route.alertsRoute() {
     get("/api/alerts") {
@@ -152,12 +167,13 @@ private fun Route.alertsRoute() {
 }
 
 /**
- * -----------------------------------------------------------
  * GET /api/dashboard/critical-alerts
- * returns the most recent critical-severity alerts for the
- * dashboard panel.
- * optional site, from, and to filters.
- * -----------------------------------------------------------
+ *
+ * feeds the critical alerts panel on the dashboard. Only returns critical-severity alerts
+ * so the panel stays focused on things that need immediate attention.
+ * Optional filters:
+ * - [site] - limit to one herd
+ * - [from] / [to] - date-time range
  */
 private fun Route.dashboardCriticalAlertsRoute() {
     get("/api/dashboard/critical-alerts") {
@@ -199,11 +215,11 @@ private fun Route.dashboardCriticalAlertsRoute() {
 }
 
 /**
- * ----------------------------------------------
  * GET /api/readings
- * returns readings for a given site, optionally.
- * filtered by a date-time range.
- * ----------------------------------------------
+ *
+ * returns all sensor readings for a given site, ordered oldest-first so charts render correctly.
+ * the [site] parameter is required - we return 400 if it's missing and 404 if the site doesn't exist.
+ * you can also pass [from] and [to] as date-times to limit the time window.
  */
 private fun Route.readingsRoute() {
     get("/api/readings") {
@@ -264,10 +280,10 @@ private fun Route.readingsRoute() {
 }
 
 /**
- * ----------------------------------------------
  * GET /api/sites
- * returns all registered monitoring sites/herds.
- * ----------------------------------------------
+ *
+ * returns every registered site so frontend can populate its dropdown menu
+ * each entry has an [id] and a human-readable [description]
  */
 private fun Route.sitesRoute() {
     get("/api/sites") {
