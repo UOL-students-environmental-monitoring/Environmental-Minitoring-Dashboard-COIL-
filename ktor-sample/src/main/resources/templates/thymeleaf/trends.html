@@ -7,31 +7,55 @@
     <link rel="stylesheet" href="/static/css/trends.css" />
     <!--
     Chart.js must load before trends.js so new Chart() is defined when drawChart runs
-    Trends.js uses defer so we can store script in head, download trends.js in background
-    and then run it after all html elements have been built.
+    trends.js uses defer so it runs after all the HTML elements have been built
     -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/static/js/trends.js" defer></script>
 </head>
 
 <body>
-<!-- Header: site title on the left, navigation links on the right -->
-<header>
-    <h1>Environmental Monitor</h1>
-    <nav>
+
+<!--
+    Header: matches the dashboard's .site-header structure exactly
+    holds nav bar buttons
+-->
+<header class="site-header">
+    <div>
+        <!-- eyebrow is the small blue uppercase label above the title,
+             same wording as the dashboard -->
+        <p class="eyebrow">Livestock environment</p>
+        <h1>Environmental Monitoring</h1>
+    </div>
+
+    <!--
+        .top-nav and .is-active are the same class names the dashboard uses
+        , so both pages share the same nav link appearance
+    -->
+    <nav class="top-nav" aria-label="Primary">
         <a href="/static/index.html">Dashboard</a>
-        <a href="/static/trends" class="active">Trends</a>
+        <a href="/trends" class="is-active" aria-current="page">Trends</a>
         <a href="/static/alerts.html">Alerts</a>
-        <a href="/static/portal.html">Portal</a>
     </nav>
 </header>
 
 <main>
-    <div class="page-title">Activity Overview</div>
 
+    <!--
+        .sector is our white card that holds the controls and chart
+        Inside it we use .panel-header (same pattern as the dashboard's panel headers)
+        to show an eyebrow + h2 above the controls.
+    -->
     <div class="sector">
 
-        <!-- control bar: all the dropdowns and buttons the user interacts with -->
+        <!-- panel header: eyebrow + page title, same style as the dashboard panels -->
+        <div class="panel-header">
+            <div>
+                <p class="eyebrow">Trends</p>
+                <h2>Activity Overview</h2>
+            </div>
+        </div>
+
+        <!-- control bar: all the dropdowns and buttons for user interaction -->
         <div class="controls">
 
             <!--
@@ -48,9 +72,9 @@
 
             <!--
                 Month selector
-                available months are from jan 2023 to december 2023
-                december 2023 is pre-selected because it is the most recent month
-                The "YYYY-MM" value format makes it easy to build date strings in JavaScript
+                available months are January 2023 to December 2023
+                december 2023 is selected first since it is the most recent month
+                "YYYY-MM" makes it easy to build date strings in JS
             -->
             <div class="control-group">
                 <label for="month-select">Month</label>
@@ -71,10 +95,10 @@
             </div>
 
             <!--
-                Last 7 days / Full-month view toggle
-                javaScript only shows this for december 2023 (the most recent month)
-                for all other months only show 30 days since you cant show in the past 7 days
-                data-view is a custom attribute that JS reads with button.dataset.view
+                Last-7-days / Full-month toggle
+                JS shows this only for most recent month, December 2023
+                and hides it for all other months which only show that month
+                data-view is a custom attribute that JS reads with button.dataset.view.
             -->
             <div class="control-group" id="time-toggle-group">
                 <label>View</label>
@@ -86,10 +110,9 @@
 
             <!--
                 Parameter dropdown
-                controls which sensor field is drawn on the chart and what field
-                is included when the user downloads data.
-                "Temperature" - ambientTemperatureC field from ReadingDTO
-                "Activity"    - accelMagG field from ReadingDTO
+                chooses which sensor field is shown in the chart and in downloads
+                temperature is ambientTemperatureC from ReadingDTO
+                activity is accelMagG from ReadingDTO
             -->
             <div class="control-group">
                 <label for="param-select">Parameter</label>
@@ -99,16 +122,13 @@
                 </select>
             </div>
 
-            <!--
-                Download section: choose format and download
-                a small line divider to split controls for download and graph
-            -->
+            <!-- thin vertical line separating the chart controls from the download controls -->
             <div class="control-divider"></div>
 
             <!--
                 Format selector
-                CSV gives a plain spreadsheet-style file
-                HTML gives a formatted table you can view in-browser
+                CSV is plain spreadsheet file
+                HTML is formatted table, opens in-browser
             -->
             <div class="control-group">
                 <label for="format-select">Format</label>
@@ -120,26 +140,27 @@
 
             <!--
                 Download button
-                fetches the current data (same site, month, and parameter as the chart)
+                fetches data for the current site, month, and parameter
                 saves it to the user's device in the chosen format
-                the empty label keeps it vertically aligned with the other controls.
+                the spacer span keeps it vertically aligned with the other controls
+                (a <span> rather than <label> avoids an orphaned-label accessibility error)
             -->
             <div class="control-group">
-                <label>&nbsp</label>
-                <button id="download-btn" class="download-btn">Download</button>
+                <span class="control-label-spacer" aria-hidden="true"></span>
+                <button id="download-btn" class="download-btn" aria-label="Download readings as selected format">Download</button>
             </div>
 
         </div>
 
-        <!-- message shown while chart data is being fetched from api -->
+        <!-- nessage shown while chart data is being fetched from the API -->
         <div id="loading-message" style="display:none">Chart is loading...</div>
 
-        <!-- message shown if api call fails -->
+        <!-- message shown only if the API call fails -->
         <div id="error-message" style="display:none">Could not load data.</div>
 
         <!--
             Chart.js draws the line graph onto this <canvas> element
-            the wrapping div lets CSS control the height without touching Chart.js settings
+            div around it controls height without affecting Chart.js settings in CSS
         -->
         <div class="chart-wrapper">
             <canvas id="trends-chart"></canvas>
