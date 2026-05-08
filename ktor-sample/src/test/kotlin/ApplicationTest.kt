@@ -1,5 +1,3 @@
-@file:Suppress("WildcardImport", "NoWildcardImports")
-
 package com.example
 
 import io.ktor.client.request.get
@@ -10,7 +8,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -63,7 +61,7 @@ class ApplicationTest {
             val response = client.get("/")
             assertTrue(
                 response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Found,
-                "Expected 200 or 302 but got ${response.status}"
+                "Expected 200 or 302 but got ${response.status}",
             )
         }
 
@@ -447,7 +445,7 @@ class ApplicationTest {
                 latitude = -32.77,
                 longitude = 26.84,
                 accelMagG = 1.0,
-                ambientTemperatureC = 20.0
+                ambientTemperatureC = 20.0,
             )
         val result = AlertEngine.evaluateLivestock(data)
         assertEquals("normal", result.status)
@@ -463,7 +461,7 @@ class ApplicationTest {
                 latitude = -32.77,
                 longitude = 26.84,
                 accelMagG = 1.0,
-                ambientTemperatureC = 38.0
+                ambientTemperatureC = 38.0,
             )
         val result = AlertEngine.evaluateLivestock(data)
         assertEquals("critical", result.status)
@@ -479,7 +477,7 @@ class ApplicationTest {
                 latitude = -32.77,
                 longitude = 26.84,
                 accelMagG = 1.0,
-                ambientTemperatureC = 32.0
+                ambientTemperatureC = 32.0,
             )
         val result = AlertEngine.evaluateLivestock(data)
         assertEquals("warning", result.status)
@@ -495,7 +493,7 @@ class ApplicationTest {
                 latitude = -32.77,
                 longitude = 26.84,
                 accelMagG = 0.1,
-                ambientTemperatureC = 20.0
+                ambientTemperatureC = 20.0,
             )
         val result = AlertEngine.evaluateLivestock(data)
         assertEquals("critical", result.status)
@@ -511,7 +509,7 @@ class ApplicationTest {
                 latitude = -32.77,
                 longitude = 26.84,
                 accelMagG = 5.0,
-                ambientTemperatureC = 20.0
+                ambientTemperatureC = 20.0,
             )
         val result = AlertEngine.evaluateLivestock(data)
         assertEquals("critical", result.status)
@@ -527,7 +525,7 @@ class ApplicationTest {
                 latitude = -32.77,
                 longitude = 26.84,
                 accelMagG = 0.4,
-                ambientTemperatureC = 33.0
+                ambientTemperatureC = 33.0,
             )
         val result = AlertEngine.evaluateLivestock(data)
         assertTrue(result.alerts.any { it.parameter == "heat_collapse" })

@@ -16,7 +16,7 @@ fun Application.configureTemplating() {
                 prefix = "templates/thymeleaf/"
                 suffix = ".html"
                 characterEncoding = "utf-8"
-            }
+            },
         )
     }
     routing {
@@ -31,5 +31,5 @@ fun Application.configureTemplating() {
 
 data class ThymeleafUser(
     val id: Int,
-    val name: String
+    val name: String,
 )

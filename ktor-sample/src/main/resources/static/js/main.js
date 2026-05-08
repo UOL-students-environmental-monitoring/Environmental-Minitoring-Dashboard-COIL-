@@ -1,5 +1,27 @@
 import { getDashboardData } from "./api.js";
 
+// keeps track of alert IDs the user has dismissed this session
+// using a Set so we can check membership in constant time
+const dismissedAlertIds = new Set();
+
+// filters a list of alerts to only those within 7 days of the most recent dec 31 timestamp.
+// this gives a consistent date range no matter when the page is actually loaded.
+function get7DayWindow(alerts) {
+    const dec31 = alerts.filter(a => a.timeStamp.startsWith("2023-12-31"));
+    if (!dec31.length) {
+        return alerts;
+    }
+    // find the latest timestamp on dec 31
+    const mostRecent = dec31.reduce((latest, a) =>
+        a.timeStamp > latest ? a.timeStamp : latest, dec31[0].timeStamp
+    );
+    const cutoff = new Date(new Date(mostRecent).getTime() - 7 * 24 * 60 * 60 * 1000);
+    return alerts.filter(a => {
+        const t = new Date(a.timeStamp);
+        return t >= cutoff && t <= new Date(mostRecent);
+    });
+}
+
 const elements = {
     status: document.querySelector("#sync-status"),
     siteFilter: document.querySelector("#site-filter"),
@@ -183,7 +205,8 @@ function renderMetrics() {
 
     const tempAverage = average(latestReadings.map((reading) => reading.ambientTemperatureC));
     const motionAverage = average(latestReadings.map((reading) => reading.accelMagG));
-    const visibleAlerts = filterBySite(dashboardCriticalAlerts(), selectedSiteId());
+    // filter to 7-day window so the metric card matches the alerts panel count
+    const visibleAlerts = get7DayWindow(filterBySite(dashboardCriticalAlerts(), selectedSiteId()));
 
     // When one site is selected, this card is just showing that selected site.
     elements.metricSites.textContent =
@@ -214,21 +237,27 @@ function renderAlerts() {
     elements.alertsList.innerHTML = "";
 
     const allCriticalAlerts = dashboardCriticalAlerts();
-    const alerts = filterBySite(allCriticalAlerts, selectedAlertSiteId()).slice(0, 5);
+    // only consider alerts within the 7-day window
+    const weekAlerts =  get7DayWindow(filterBySite(allCriticalAlerts, selectedAlertSiteId()));
+    const weekCount = weekAlerts.length;
+
+    // filter out anything the user has dismissed, then cap at 3 to avoid scrolling
+    const visible = weekAlerts.filter(a => !dismissedAlertIds.has(a.id)).slice(0, 3);
 
     if (!allCriticalAlerts.length) {
         elements.alertsState.textContent = "No critical alerts have been logged.";
         return;
     }
 
-    if (!alerts.length) {
-        elements.alertsState.textContent = "No critical alerts match this herd.";
+    if (!weekAlerts.length) {
+        elements.alertsState.textContent = "No critical alerts in the last 7 days.";
         return;
     }
 
-    elements.alertsState.textContent = `${alerts.length} recent critical alert${alerts.length === 1 ? "" : "s"}`;
+    elements.alertsState.textContent =
+        `${weekCount} critical alert${weekCount === 1 ? "" : "s"} in the last 7 days`;
 
-    alerts.forEach((alert) => {
+    visible.forEach((alert) => {
         const item = elements.alertTemplate.content.firstElementChild.cloneNode(true);
         const link = item.querySelector("[data-alert-link]");
         link.href = alertPageUrl(alert);
@@ -242,6 +271,16 @@ function renderAlerts() {
         const className = severityClass(alert.severity);
         if (className) {
             severity.classList.add(className);
+        }
+
+        // add the id to dismissed set and re-render the list when clicked
+        const dismissBtn = item.querySelector("[data-dismiss]");
+        if (dismissBtn) {
+            dismissBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                dismissedAlertIds.add(alert.id);
+                renderAlerts();
+            });
         }
 
         elements.alertsList.append(item);

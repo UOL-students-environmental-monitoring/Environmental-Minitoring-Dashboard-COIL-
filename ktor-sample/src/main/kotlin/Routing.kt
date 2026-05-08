@@ -1,4 +1,4 @@
-@file:Suppress("WildcardImport", "NoWildcardImports")
+@file:Suppress("WildcardImport", "NoWildcardImports", "ktlint:standard:no-wildcard-imports")
 
 package com.example
 
@@ -38,7 +38,7 @@ fun Application.configureRouting() {
     }
 }
 
-// returns an error message string if validation fails, null if the payload is valid
+/** returns an error message string if validation fails, null if the payload is valid */
 private fun validatePayload(payload: LivestockPayload): String? {
     if (payload.siteId.isBlank()) return "siteId is blank. Cannot be blank"
     if (payload.latitude < MIN_LATITUDE || payload.latitude > MAX_LATITUDE) {
@@ -75,7 +75,7 @@ private fun saveReading(
                 it[status] = evaluation.status
                 it[alertTriggered] = if (evaluation.alerts.isNotEmpty()) 1 else 0
                 it[alertLowActivity] = if (hasLowActivity) 1 else 0
-                it[alertGeofence] = 0
+                it[alertGeofence] = if (evaluation.alerts.any { a -> a.parameter == "geofence" }) 1 else 0
                 it[alertFlee] = if (evaluation.alerts.any { a -> a.parameter == "flee" }) 1 else 0
             } get LivestockReadings.id
 
@@ -120,11 +120,13 @@ private fun Route.ingestRoute() {
     }
 }
 
-// ---------------------------------------------
-// GET /api/alerts
-// returns the last 50 alerts.
-// both query parameters are optional filters.
-// ---------------------------------------------
+/**
+ * ---------------------------------------------
+ * GET /api/alerts
+ * returns the last 50 alerts.
+ * both query parameters are optional filters.
+ * ---------------------------------------------
+ */
 private fun Route.alertsRoute() {
     get("/api/alerts") {
         val siteFilter = call.request.queryParameters["site"]
@@ -141,7 +143,7 @@ private fun Route.alertsRoute() {
                         parameter = row[AlertsLog.parameter],
                         severity = row[AlertsLog.severity],
                         message = row[AlertsLog.message],
-                        timeStamp = row[AlertsLog.timeStamp].toString()
+                        timeStamp = row[AlertsLog.timeStamp].toString(),
                     )
                 }
             }
@@ -149,19 +151,37 @@ private fun Route.alertsRoute() {
     }
 }
 
-// -----------------------------------------------------------
-// GET /api/dashboard/critical-alerts
-// returns the most recent critical-severity alerts for the
-// dashboard panel.
-// optional site filter.
-// -----------------------------------------------------------
+/**
+ * -----------------------------------------------------------
+ * GET /api/dashboard/critical-alerts
+ * returns the most recent critical-severity alerts for the
+ * dashboard panel.
+ * optional site, from, and to filters.
+ * -----------------------------------------------------------
+ */
 private fun Route.dashboardCriticalAlertsRoute() {
     get("/api/dashboard/critical-alerts") {
         val siteFilter = call.request.queryParameters["site"]
+        val fromFilter = call.request.queryParameters["from"]
+        val toFilter = call.request.queryParameters["to"]
         val alerts =
             transaction {
                 var query = AlertsLog.selectAll().andWhere { AlertsLog.severity eq "critical" }
                 if (siteFilter != null) query = query.andWhere { AlertsLog.siteId eq siteFilter }
+                if (fromFilter != null) {
+                    try {
+                        val from = LocalDateTime.parse(fromFilter)
+                        query = query.andWhere { AlertsLog.timeStamp greaterEq from }
+                    } catch (_: DateTimeParseException) {
+                    }
+                }
+                if (toFilter != null) {
+                    try {
+                        val to = LocalDateTime.parse(toFilter)
+                        query = query.andWhere { AlertsLog.timeStamp lessEq to }
+                    } catch (_: DateTimeParseException) {
+                    }
+                }
                 query.orderBy(AlertsLog.timeStamp to SortOrder.DESC).limit(DASHBOARD_CRITICAL_ALERTS_LIMIT).map { row ->
                     DashboardAlertDTO(
                         id = row[AlertsLog.id],
@@ -170,7 +190,7 @@ private fun Route.dashboardCriticalAlertsRoute() {
                         severity = row[AlertsLog.severity],
                         message = row[AlertsLog.message],
                         timeStamp = row[AlertsLog.timeStamp].toString(),
-                        source = "readings"
+                        source = "readings",
                     )
                 }
             }
@@ -178,11 +198,13 @@ private fun Route.dashboardCriticalAlertsRoute() {
     }
 }
 
-// ----------------------------------------------
-// GET /api/readings
-// returns readings for a given site, optionally.
-// filtered by a date-time range.
-// ----------------------------------------------
+/**
+ * ----------------------------------------------
+ * GET /api/readings
+ * returns readings for a given site, optionally.
+ * filtered by a date-time range.
+ * ----------------------------------------------
+ */
 private fun Route.readingsRoute() {
     get("/api/readings") {
         val siteParameter = call.request.queryParameters["site"]
@@ -233,7 +255,7 @@ private fun Route.readingsRoute() {
                         alertTriggered = row[LivestockReadings.alertTriggered] == 1,
                         alertLowActivity = row[LivestockReadings.alertLowActivity] == 1,
                         alertGeofence = row[LivestockReadings.alertGeofence] == 1,
-                        alertFlee = row[LivestockReadings.alertFlee] == 1
+                        alertFlee = row[LivestockReadings.alertFlee] == 1,
                     )
                 }
             }
@@ -241,10 +263,12 @@ private fun Route.readingsRoute() {
     }
 }
 
-// ----------------------------------------------
-// GET /api/sites
-// returns all registered monitoring sites/herds.
-// ----------------------------------------------
+/**
+ * ----------------------------------------------
+ * GET /api/sites
+ * returns all registered monitoring sites/herds.
+ * ----------------------------------------------
+ */
 private fun Route.sitesRoute() {
     get("/api/sites") {
         val sites =

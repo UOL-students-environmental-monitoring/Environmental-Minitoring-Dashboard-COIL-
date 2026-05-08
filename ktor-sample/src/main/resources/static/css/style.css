@@ -406,6 +406,26 @@ select:focus {
     font-size: 0.82rem;
 }
 
+.dismiss-btn {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: transparent;
+    padding: 0.28rem 0.5rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1;
+    
+    cursor: pointer;
+}
+
+.dismiss-btn:hover,
+.dismiss-btn:focus {
+    border-color: var(--danger);
+    color: var(--danger);
+    outline: none;
+}
+
 .severity-badge {
     flex: 0 0 auto;
     border-radius: 999px;

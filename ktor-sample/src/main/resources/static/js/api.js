@@ -36,8 +36,10 @@ export async function getReadings(siteId, options = {}) {
     return requestJson(`/api/readings?${params.toString()}`);
 }
 
-export async function getDashboardCriticalAlerts() {
-    return requestJson("/api/dashboard/critical-alerts");
+export async function getDashboardCriticalAlerts(options = {}) {
+    const params = new URLSearchParams(options);
+    const suffix = params.size ? `?${params.toString()}` : "";
+    return requestJson(`/api/dashboard/critical-alerts${suffix}`);
 }
 
 export async function getDashboardData() {
@@ -68,6 +70,9 @@ export async function getDashboardData() {
     return {
         sites,
         siteReadings,
-        alerts: await getDashboardCriticalAlerts(),
+        alerts: await getDashboardCriticalAlerts({
+            from: "2023-12-24T00:00:00",
+            to: "2023-12-31T23:59:59",
+        }),
     };
 }

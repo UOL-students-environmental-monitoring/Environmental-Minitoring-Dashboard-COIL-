@@ -1,4 +1,4 @@
-<!-- Alerts Page — serves three main personas:
+<!-- Alerts Page - serves three main personas:
      Tom:       mobile-friendly, instant load, clear critical/warning labels
      Priya:     site ID on every card so she can see which herd triggered it
      Dr. Sarah: filter chips to switch between alert conditions
@@ -24,7 +24,7 @@
             --ink:           #18211d;   /* near-black for body text */
             --muted:         #68756d;   /* grey-green for secondary text */
             --line:          #d8dfd6;   /* border colour */
-            --accent:        #24745a;   /* main green — active buttons */
+            --accent:        #24745a;   /* main green - active buttons */
             --accent-strong: #14503f;   /* darker green for hover */
             --amber:         #b56b1d;   /* orange-ish for warning severity */
             --danger:        #b63d32;   /* red for critical severity */
@@ -44,7 +44,7 @@
         /* browsers don't inherit fonts on form elements by default, so force it */
         button, select, input { font: inherit; }
 
-        /* page background — the two stacked gradients draw the faint grid
+        /* page background - the two stacked gradients draw the faint grid
            pattern you can see on the dashboard and trends pages */
         body {
             min-height: 100vh;
@@ -118,7 +118,7 @@
             outline: none;
         }
 
-        /* currently active page — solid green fill, white text */
+        /* currently active page - solid green fill, white text */
         .top-nav .is-active {
             border-color: var(--accent);
             background: var(--accent);
@@ -168,7 +168,7 @@
             color: var(--accent-strong);
         }
 
-        /* active filter chip — green fill, white text */
+        /* active filter chip - green fill, white text */
         .filter-chip.active {
             background: var(--accent);
             color: #ffffff;
@@ -318,7 +318,7 @@
         /* dot separator before the site name */
         .alert-site::before { content: '· '; }
 
-        /* dismiss button — pushed to the right with margin-left: auto */
+        /* dismiss button - pushed to the right with margin-left: auto */
         .dismiss-btn {
             margin-left: auto;
             font-size: 0.78rem;
@@ -336,7 +336,7 @@
             border-color: var(--muted);
         }
 
-        /* GPS track button — only shown on flee event cards */
+        /* GPS track button - only shown on flee event cards */
         .gps-btn {
             font-size: 0.78rem;
             color: var(--danger);
@@ -373,7 +373,7 @@
             color: var(--muted);
         }
 
-        /* prev / next buttons — same visual style as the nav links */
+        /* prev / next buttons - same visual style as the nav links */
         .page-btn {
             min-height: 2.35rem;
             border: 1px solid var(--line);
@@ -429,7 +429,7 @@
             /* narrower severity column on phones */
             .alert-card { grid-template-columns: 72px 1fr; }
 
-            /* hide the dropdowns on mobile — the filter chips are enough */
+            /* hide the dropdowns on mobile - the filter chips are enough */
             .site-filter,
             .source-toggle { display: none; }
         }
@@ -462,7 +462,7 @@
     <!-- -- Filter chips ----------------------------------------------------
          Heat Stress (temperature-only) button removed.
          Low Activity and Heat Collapse buttons are kept and now work
-         correctly — the JS below detects those conditions from the raw
+         correctly - the JS below detects those conditions from the raw
          sensor values using the same thresholds as AlertEngine.kt.
     ----------------------------------------------------------------------- -->
     <div class="filter-bar">
@@ -475,7 +475,7 @@
         <button class="filter-chip" onclick="setFilter('heat_collapse', this)">Heat Collapse</button>
     </div>
 
-    <!-- site dropdown — re-fetches data for a specific herd -->
+    <!-- site dropdown - re-fetches data for a specific herd -->
     <div class="site-filter">
         <label for="site-select">Site:</label>
         <select id="site-select" onchange="setSite(this.value)">
@@ -490,7 +490,7 @@
         <div class="state-msg">Loading alerts…</div>
     </div>
 
-    <!-- prev / page info / next — injected by renderPagination() -->
+    <!-- prev / page info / next - injected by renderPagination() -->
     <div class="pagination" id="pagination"></div>
 
 </div>
@@ -499,7 +499,7 @@
 
 <script>
 
-    // -- Thresholds — must match AlertEngine.kt exactly ----------------------
+    // -- Thresholds - must match AlertEngine.kt exactly ----------------------
     // If these values change in the backend they need to change here too.
     const WARNING_TEMP_C   = 30.0;  // above this = heat stress warning
     const WARNING_ACCEL_G  = 0.6;   // below this = low activity (warning severity)
@@ -514,7 +514,7 @@
 
     const CARDS_PER_PAGE = 5;   // how many alert cards to show per page
 
-    // -- init — fetch both endpoints at the same time -------------------------
+    // -- init - fetch both endpoints at the same time -------------------------
     // Using Promise.all means both requests go out in parallel, which
     // is faster than waiting for one to finish before starting the next.
     //
@@ -525,7 +525,7 @@
             const siteParam = activeSite ? '?site=' + encodeURIComponent(activeSite) : '';
 
             if (activeSite) {
-                // a specific site is selected — one request each
+                // a specific site is selected - one request each
                 const [alertsRes, readingsRes] = await Promise.all([
                     fetch('/api/alerts' + siteParam),
                     fetch('/api/readings?site=' + encodeURIComponent(activeSite))
@@ -533,7 +533,7 @@
                 alertsData   = alertsRes.ok   ? await alertsRes.json()   : [];
                 readingsData = readingsRes.ok ? await readingsRes.json() : [];
             } else {
-                // no site selected — fetch all three endpoints in parallel:
+                // no site selected - fetch all three endpoints in parallel:
                 // alerts (supports no site param), plus readings for each herd
                 const [alertsRes, cattleRes, goatRes] = await Promise.all([
                     fetch('/api/alerts'),
@@ -557,7 +557,7 @@
         }
     }
 
-    // -- get7DayWindow — trims the card list to the last 7 days of data --------
+    // -- get7DayWindow - trims the card list to the last 7 days of data --------
     // Finds the most recent alert on 31 December 2023 and keeps only the
     // cards from the 7 days leading up to that moment.  This gives a
     // stable snapshot rather than an ever-growing list.
@@ -586,7 +586,7 @@
         });
     }
 
-    // -- render — builds the card list for the current page ------------------
+    // -- render - builds the card list for the current page ------------------
     function render() {
         const list = document.getElementById('alerts-list');
         list.innerHTML = '';
@@ -619,7 +619,7 @@
 
                 // work out which alert type this reading represents.
                 //
-                // order of checks matters here — heat_collapse is the most
+                // order of checks matters here - heat_collapse is the most
                 // severe combined condition so it is checked first.
                 // flee is second because high acceleration overrides low-activity.
                 // low_activity comes last for pure movement-based alerts.
@@ -636,7 +636,7 @@
                     parameter = 'flee';
 
                 } else if (r.alertLowActivity || r.accelMagG < WARNING_ACCEL_G) {
-                    // low movement — how low determines severity
+                    // low movement - how low determines severity
                     parameter = 'low_activity';
                     severity  = r.accelMagG < CRITICAL_ACCEL_G ? 'critical' : 'warning';
 
@@ -651,18 +651,18 @@
 
                 // build a human-readable message from the raw sensor values
                 const tempMsg = r.ambientTemperatureC > WARNING_TEMP_C
-                    ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + '°C — ' +
+                    ? 'Temperature ' + r.ambientTemperatureC.toFixed(1) + '°C - ' +
                       (r.ambientTemperatureC > 35 ? 'critical heat stress risk.' : 'monitor for heat stress.')
                     : '';
 
                 const accelMsg = r.alertFlee
-                    ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g — flee event detected.'
+                    ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g - flee event detected.'
                     : r.accelMagG < WARNING_ACCEL_G
-                        ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g — low activity, possible illness.'
+                        ? 'Accelerometer ' + r.accelMagG.toFixed(2) + 'g - low activity, possible illness.'
                         : '';
 
                 const message = [tempMsg, accelMsg].filter(Boolean).join(' ')
-                    || 'Alert flag raised — check reading.';
+                    || 'Alert flag raised - check reading.';
 
                 cards.push({
                     id:        'reading-' + r.id,
@@ -690,7 +690,7 @@
             if (activeFilter === 'all')       return true;
             if (activeFilter === 'critical')  return c.severity === 'critical';
             if (activeFilter === 'warning')   return c.severity === 'warning';
-            // 'low_activity', 'flee', 'heat_collapse' — match by parameter name
+            // 'low_activity', 'flee', 'heat_collapse' - match by parameter name
             return c.parameter === activeFilter;
         });
 
@@ -752,7 +752,7 @@
         renderPagination(totalPages);
     }
 
-    // -- renderPagination — draws prev / page-info / next below the list -----
+    // -- renderPagination - draws prev / page-info / next below the list -----
     function renderPagination(totalPages) {
         const container = document.getElementById('pagination');
         container.innerHTML = '';
@@ -782,20 +782,20 @@
         container.append(prevBtn, info, nextBtn);
     }
 
-    // -- formatParam — turns internal parameter keys into display labels -------
+    // -- formatParam - turns internal parameter keys into display labels -------
     function formatParam(p) {
         const labels = {
-            temperature:   'Heat Stress — Temperature',
+            temperature:   'Heat Stress - Temperature',
             low_activity:  'Low Activity Alert',
             flee:          'Flee / Rustling Event',
-            heat_collapse: 'Heat Collapse — Combined Alert',
+            heat_collapse: 'Heat Collapse - Combined Alert',
             geofence:      'Geofence Breach',
             unknown:       'Alert Flagged'
         };
         return labels[p] || p;
     }
 
-    // -- setFilter — called when a filter chip button is clicked --------------
+    // -- setFilter - called when a filter chip button is clicked --------------
     function setFilter(f, btn) {
         activeFilter = f;
         currentPage  = 0;  // always go back to page 1 when the filter changes
@@ -804,14 +804,14 @@
         render();
     }
 
-    // -- setSite — re-fetches from both APIs with the new site param ----------
+    // -- setSite - re-fetches from both APIs with the new site param ----------
     function setSite(val) {
         activeSite  = val;
         currentPage = 0;
         init();
     }
 
-    // -- dismiss — removes a card from the page and the local data arrays -----
+    // -- dismiss - removes a card from the page and the local data arrays -----
     function dismiss(uid) {
         const el = document.querySelector('[data-uid="' + uid + '"]');
         if (!el) return;
@@ -834,7 +834,7 @@
         }, 200);
     }
 
-    // -- trackGPS — navigates to the portal page to show the animal on a map --
+    // -- trackGPS - navigates to the portal page to show the animal on a map --
     function trackGPS(uid, siteId) {
         showToast('Opening GPS tracker…');
         const rawId = uid.replace('alert-', '').replace('reading-', '');
@@ -844,7 +844,7 @@
         }, 700);
     }
 
-    // -- showToast — briefly shows a small message at the bottom right ---------
+    // -- showToast - briefly shows a small message at the bottom right ---------
     function showToast(msg) {
         const t = document.getElementById('toast');
         t.textContent = msg;
